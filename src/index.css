@@ -1,0 +1,55 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #09090b;
+    color: #e4e4e7;
+    font-family: 'Inter', sans-serif;
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+  }
+  ::-webkit-scrollbar { width: 4px; height: 4px; }
+  ::-webkit-scrollbar-track { background: #0f1014; }
+  ::-webkit-scrollbar-thumb { background: #242529; border-radius: 2px; }
+}
+
+@layer components {
+  .card  { @apply bg-card border border-border rounded-xl; }
+  .panel { @apply bg-bg2 border border-border rounded-xl; }
+
+  .btn-primary { @apply inline-flex items-center gap-2 bg-accent text-black font-semibold text-sm px-4 py-2 rounded-lg cursor-pointer border-none transition-opacity hover:opacity-90 active:scale-95; }
+  .btn-ghost   { @apply inline-flex items-center gap-2 bg-bg3 text-zinc-300 border border-border2 text-sm px-4 py-2 rounded-lg cursor-pointer transition-colors; }
+  .btn-ghost:hover { border-color: rgba(0,229,255,0.4); color: #00e5ff; }
+  .btn-danger  { @apply inline-flex items-center gap-2 text-red text-sm px-4 py-2 rounded-lg cursor-pointer transition-colors; background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.2); }
+  .btn-danger:hover { background: rgba(239,68,68,0.2); }
+  .btn-icon    { @apply inline-flex items-center justify-center bg-bg3 border border-border2 text-muted p-2 rounded-lg cursor-pointer transition-colors hover:text-zinc-200; }
+
+  .input { @apply w-full bg-bg3 border border-border2 text-zinc-100 placeholder-muted px-3 py-2.5 rounded-lg text-sm outline-none transition-colors; }
+  .input:focus { border-color: rgba(0,229,255,0.5); }
+  .label { @apply block text-[10.5px] font-semibold text-muted uppercase tracking-wider mb-1.5; }
+
+  .badge      { @apply inline-flex items-center font-mono text-[10.5px] font-medium px-2 py-0.5 rounded; }
+  .badge-win  { @apply badge text-green;  background: rgba(34,197,94,0.1); }
+  .badge-loss { @apply badge text-red;    background: rgba(239,68,68,0.1); }
+  .badge-be   { @apply badge text-yellow; background: rgba(234,179,8,0.1); }
+  .badge-buy  { @apply badge text-accent; background: rgba(0,229,255,0.1); }
+  .badge-sell { @apply badge text-red;    background: rgba(239,68,68,0.1); }
+
+  .nav-item { @apply flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm text-muted font-medium cursor-pointer transition-colors hover:bg-bg3 hover:text-zinc-200; }
+  .nav-item.active { background: rgba(0,229,255,0.08); color: #00e5ff; }
+
+  .stat-border { @apply absolute top-0 left-0 right-0 h-[2px] rounded-t-xl; }
+}
+
+body::after {
+  content: '';
+  position: fixed; inset: 0; z-index: -1;
+  background: radial-gradient(ellipse 100% 50% at 50% -20%, rgba(0,229,255,0.04) 0%, transparent 60%);
+  pointer-events: none;
+}
+
+@keyframes fadeIn { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:translateY(0); } }
+.fade-in { animation: fadeIn 0.25s ease both; }
