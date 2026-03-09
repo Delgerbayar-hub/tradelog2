@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # TradeLog — Forex / CFD Trading Journal
 
 React 18 + TypeScript · Firebase (Firestore + Google Auth) · Recharts
@@ -76,3 +77,6 @@ src/
     ├── AccountModal.tsx
     └── TradeModal.tsx
 ```
+=======
+# tradelog2
+>>>>>>> 6e1810fec3b1fbcdc3ca637d62b87d8a1de6d03c
