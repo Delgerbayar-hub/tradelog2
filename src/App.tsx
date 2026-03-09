@@ -17,7 +17,8 @@ function Spinner() {
   return (
     <div className="min-h-screen bg-bg flex items-center justify-center">
       <div className="flex items-center gap-3">
-        <div className="w-7 h-7 rounded-lg bg-accent/10 border border-accent/20 flex items-center justify-center">
+        <div style={{background:'rgba(0,229,255,0.1)',border:'1px solid rgba(0,229,255,0.2)'}}
+          className="w-7 h-7 rounded-lg flex items-center justify-center">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#00e5ff" strokeWidth="2.2">
             <polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/>
             <polyline points="16 7 22 7 22 13"/>
@@ -33,13 +34,13 @@ function Shell() {
   const { accounts, loading: aL, addAccount, updateAccount, deleteAccount } = useAccounts()
   const [activeId,   setActiveId]   = useState<string | null>(null)
   const [accModal,   setAccModal]   = useState<{ open: boolean; editing: Account | null }>({ open: false, editing: null })
-  const [tradeModal, setTradeModal] = useState(false)
+  const [tradeModal, setTradeModal] = useState<{ open: boolean; editing: Trade | null }>({ open: false, editing: null })
 
   useEffect(() => {
     if (!aL && accounts.length && !activeId) setActiveId(accounts[0].id)
   }, [accounts, aL, activeId])
 
-  const { trades, loading: tL, addTrade, deleteTrade } = useTrades(activeId)
+  const { trades, loading: tL, addTrade, updateTrade, deleteTrade } = useTrades(activeId)
   const activeAccount = accounts.find(a => a.id === activeId) ?? null
 
   const getBalance = (id: string) => {
@@ -56,25 +57,19 @@ function Shell() {
 
   const handleDeleteAccount = async () => {
     if (!accModal.editing) return
-    if (!confirm(`Delete "${accModal.editing.name}"? This cannot be undone.`)) return
+    if (!confirm(`Delete "${accModal.editing.name}"?`)) return
     const remaining = accounts.filter(a => a.id !== accModal.editing!.id)
     await deleteAccount(accModal.editing.id)
     setActiveId(remaining[0]?.id ?? null)
     setAccModal({ open: false, editing: null })
   }
 
-  const handleSaveTrade = async (
-    data: Omit<Trade, 'id' | 'userId' | 'createdAt' | 'screenshotBase64'>,
-    screenshot?: File
-  ) => addTrade(data, screenshot)
-
   if (aL || tL) return <Spinner/>
 
   return (
     <div className="flex min-h-screen">
       <Sidebar
-        accounts={accounts}
-        activeId={activeId}
+        accounts={accounts} activeId={activeId}
         onSwitch={setActiveId}
         onAdd={() => setAccModal({ open: true, editing: null })}
         onEdit={a => setAccModal({ open: true, editing: a })}
@@ -92,9 +87,24 @@ function Shell() {
           </div>
         ) : (
           <Routes>
-            <Route path="/"          element={<DashboardPage trades={trades} account={activeAccount} onAdd={() => setTradeModal(true)}/>}/>
-            <Route path="/trades"    element={<TradesPage    trades={trades} onAdd={() => setTradeModal(true)} onDelete={deleteTrade}/>}/>
-            <Route path="/calendar"  element={<CalendarPage  trades={trades} onAdd={() => setTradeModal(true)}/>}/>
+            <Route path="/" element={
+              <DashboardPage
+                trades={trades}
+                account={activeAccount}
+                onAdd={() => setTradeModal({ open: true, editing: null })}
+              />
+            }/>
+            <Route path="/trades" element={
+              <TradesPage
+                trades={trades}
+                onAdd={() => setTradeModal({ open: true, editing: null })}
+                onEdit={t => setTradeModal({ open: true, editing: t })}
+                onDelete={deleteTrade}
+                onImport={async (ts) => { for (const t of ts) await addTrade(t) }}
+                accountId={activeId}
+              />
+            }/>
+            <Route path="/calendar"  element={<CalendarPage  trades={trades} onAdd={() => setTradeModal({ open: true, editing: null })}/>}/>
             <Route path="/analytics" element={<AnalyticsPage trades={trades}/>}/>
             <Route path="*"          element={<Navigate to="/" replace/>}/>
           </Routes>
@@ -102,8 +112,7 @@ function Shell() {
       </main>
 
       <AccountModal
-        open={accModal.open}
-        editing={accModal.editing}
+        open={accModal.open} editing={accModal.editing}
         onClose={() => setAccModal({ open: false, editing: null })}
         onSave={handleSaveAccount}
         onDelete={accModal.editing ? handleDeleteAccount : undefined}
@@ -111,10 +120,12 @@ function Shell() {
 
       {activeId && (
         <TradeModal
-          open={tradeModal}
+          open={tradeModal.open}
           accountId={activeId}
-          onClose={() => setTradeModal(false)}
-          onSave={handleSaveTrade}
+          editing={tradeModal.editing}
+          onClose={() => setTradeModal({ open: false, editing: null })}
+          onSave={async (d, before, after) => { await addTrade(d, before, after) }}
+          onUpdate={async (id, d, before, after, keepB, keepA) => { await updateTrade(id, d, before, after, keepB, keepA) }}
         />
       )}
     </div>

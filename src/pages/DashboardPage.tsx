@@ -1,7 +1,7 @@
 // src/pages/DashboardPage.tsx
 import React, { useMemo } from 'react'
-import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts'
-import { Activity, Target, TrendingUp, TrendingDown, Zap } from 'lucide-react'
+import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, BarChart, Bar, Cell } from 'recharts'
+import { Activity, Target, TrendingUp, TrendingDown, Zap, Flame, Trophy, AlertTriangle } from 'lucide-react'
 import type { Trade, Account } from '../types'
 import clsx from 'clsx'
 
@@ -24,7 +24,15 @@ export default function DashboardPage({ trades, account, onAdd }: Props) {
     const wr     = n ? (wins / n * 100).toFixed(1) : '0'
     const avgRR  = n ? (trades.reduce((s,t) => s + (t.rr||0), 0) / n).toFixed(2) : '0'
     const pf     = (() => { const gp = trades.filter(t=>t.pl>0).reduce((s,t)=>s+t.pl,0); const gl = Math.abs(trades.filter(t=>t.pl<0).reduce((s,t)=>s+t.pl,0)); return gl ? (gp/gl).toFixed(2) : '∞' })()
-    return { n, wins, losses, be, pl, wr, avgRR, pf }
+    const sorted = [...trades].sort((a,b) => a.date.localeCompare(b.date) || a.createdAt - b.createdAt)
+    let streak = 0
+    for (let i = sorted.length - 1; i >= 0; i--) {
+      if (sorted[i].result === 'Win') streak++
+      else break
+    }
+    const best  = trades.reduce((b,t) => t.pl > b.pl ? t : b, trades[0] || null)
+    const worst = trades.reduce((w,t) => t.pl < w.pl ? t : w, trades[0] || null)
+    return { n, wins, losses, be, pl, wr, avgRR, pf, streak, best, worst }
   }, [trades])
 
   const equity = useMemo(() => {
@@ -35,6 +43,36 @@ export default function DashboardPage({ trades, account, onAdd }: Props) {
     return pts
   }, [trades, account])
 
+  const drawdown = useMemo(() => {
+    let peak = account?.initBalance ?? 10000
+    let bal  = peak
+    const pts: { x: string; dd: number }[] = [{ x: 'Start', dd: 0 }]
+    ;[...trades].sort((a,b)=>a.date.localeCompare(b.date)).forEach(t => {
+      bal += t.pl
+      if (bal > peak) peak = bal
+      pts.push({ x: t.date.slice(5), dd: +((peak - bal)).toFixed(2) })
+    })
+    return pts
+  }, [trades, account])
+
+  const heatmap = useMemo(() => {
+    const weeks: { week: string; days: { date: string; pl: number; has: boolean }[] }[] = []
+    const today = new Date()
+    for (let w = 11; w >= 0; w--) {
+      const days = []
+      for (let d = 0; d < 7; d++) {
+        const dt = new Date(today)
+        dt.setDate(today.getDate() - w * 7 - (6 - d))
+        const ds = dt.toISOString().split('T')[0]
+        const dayTrades = trades.filter(t => t.date === ds)
+        const pl = dayTrades.reduce((s,t) => s + t.pl, 0)
+        days.push({ date: ds, pl: +pl.toFixed(2), has: dayTrades.length > 0 })
+      }
+      weeks.push({ week: `W${12-w}`, days })
+    }
+    return weeks
+  }, [trades])
+
   const sessions = useMemo(() =>
     ['Asian','London','New York'].map(s => ({
       name: s, count: trades.filter(t=>t.session===s).length,
@@ -42,8 +80,9 @@ export default function DashboardPage({ trades, account, onAdd }: Props) {
     }))
   , [trades])
 
-  const isUp = st.pl >= 0
+  const isUp  = st.pl >= 0
   const today = new Date().toLocaleDateString('en-US', { weekday:'long', month:'long', day:'numeric' })
+  const maxDD = Math.max(...drawdown.map(d => d.dd), 0)
 
   const StatCard = ({ label, val, sub, color, Icon }: any) => (
     <div className="card p-4 relative overflow-hidden">
@@ -62,8 +101,8 @@ export default function DashboardPage({ trades, account, onAdd }: Props) {
   )
 
   return (
-    <div className="fade-in">
-      <div className="flex items-center justify-between mb-6">
+    <div className="fade-in space-y-4">
+      <div className="flex items-center justify-between">
         <div>
           <h1 className="text-xl font-bold text-zinc-100 tracking-tight">Dashboard</h1>
           <p className="text-sm text-muted mt-0.5">{today}</p>
@@ -71,48 +110,138 @@ export default function DashboardPage({ trades, account, onAdd }: Props) {
         <button onClick={onAdd} className="btn-primary">+ Log Trade</button>
       </div>
 
-      {/* Stats row */}
-      <div className="grid grid-cols-4 gap-3 mb-5">
-        <StatCard label="Total Trades"  val={st.n}                                                    sub="all time"                        color="#00e5ff" Icon={Activity}/>
-        <StatCard label="Win Rate"      val={st.wr+'%'}                                               sub={`${st.wins}W · ${st.losses}L · ${st.be}BE`} color="#22c55e" Icon={Target}/>
-        <StatCard label="Net P&L"       val={(isUp?'+':'')+'$'+Math.abs(st.pl).toFixed(2)}            sub="total"                           color={isUp?'#22c55e':'#ef4444'} Icon={isUp?TrendingUp:TrendingDown}/>
-        <StatCard label="Profit Factor" val={st.pf}                                                   sub={'Avg R:R  1:'+st.avgRR}          color="#a855f7" Icon={Zap}/>
+      <div className="grid grid-cols-4 gap-3">
+        <StatCard label="Total Trades"  val={st.n}                                         sub="all time"                                   color="#00e5ff" Icon={Activity}/>
+        <StatCard label="Win Rate"      val={st.wr+'%'}                                    sub={`${st.wins}W · ${st.losses}L · ${st.be}BE`} color="#22c55e" Icon={Target}/>
+        <StatCard label="Net P&L"       val={(isUp?'+':'')+'$'+Math.abs(st.pl).toFixed(2)} sub="total"                                      color={isUp?'#22c55e':'#ef4444'} Icon={isUp?TrendingUp:TrendingDown}/>
+        <StatCard label="Profit Factor" val={st.pf}                                        sub={'Avg R:R  1:'+st.avgRR}                     color="#a855f7" Icon={Zap}/>
       </div>
 
-      {/* Equity curve */}
-      <div className="card p-5 mb-4">
-        <div className="flex items-center justify-between mb-4">
-          <div className="font-semibold text-sm text-zinc-200">Equity Curve</div>
-          <span className={clsx('text-xs font-mono px-2 py-0.5 rounded', isUp ? 'bg-green/10 text-green' : 'bg-red/10 text-red')}>
-            {isUp?'+':''}${st.pl.toFixed(2)}
-          </span>
+      <div className="grid grid-cols-3 gap-3">
+        <div className="card p-4 flex items-center gap-4">
+          <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: 'rgba(251,191,36,0.1)' }}>
+            <Flame size={18} color="#fbbf24"/>
+          </div>
+          <div>
+            <div className="text-[10px] font-semibold text-muted uppercase tracking-wider">Current Streak</div>
+            <div className="text-2xl font-bold text-yellow-400">{st.streak} <span className="text-sm font-normal text-muted">wins</span></div>
+          </div>
         </div>
-        <ResponsiveContainer width="100%" height={150}>
-          <AreaChart data={equity}>
-            <defs>
-              <linearGradient id="g" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%"   stopColor={isUp?'#22c55e':'#ef4444'} stopOpacity={0.2}/>
-                <stop offset="100%" stopColor={isUp?'#22c55e':'#ef4444'} stopOpacity={0}/>
-              </linearGradient>
-            </defs>
-            <XAxis dataKey="x" tick={{fill:'#52525b',fontSize:10}} axisLine={false} tickLine={false}/>
-            <YAxis tick={{fill:'#52525b',fontSize:10}} axisLine={false} tickLine={false} width={58} tickFormatter={v=>'$'+v.toLocaleString()}/>
-            <Tooltip content={<TT/>}/>
-            <Area type="monotone" dataKey="v" stroke={isUp?'#22c55e':'#ef4444'} strokeWidth={1.5} fill="url(#g)" dot={false}/>
-          </AreaChart>
-        </ResponsiveContainer>
+        <div className="card p-4 flex items-center gap-4">
+          <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: 'rgba(34,197,94,0.1)' }}>
+            <Trophy size={18} color="#22c55e"/>
+          </div>
+          <div>
+            <div className="text-[10px] font-semibold text-muted uppercase tracking-wider">Best Trade</div>
+            <div className="text-2xl font-bold text-green">{st.best ? `+$${st.best.pl.toFixed(2)}` : '—'}</div>
+            {st.best && <div className="text-[10px] text-muted font-mono">{st.best.pair} · {st.best.date}</div>}
+          </div>
+        </div>
+        <div className="card p-4 flex items-center gap-4">
+          <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: 'rgba(239,68,68,0.1)' }}>
+            <AlertTriangle size={18} color="#ef4444"/>
+          </div>
+          <div>
+            <div className="text-[10px] font-semibold text-muted uppercase tracking-wider">Worst Trade</div>
+            <div className="text-2xl font-bold text-red">{st.worst ? `$${st.worst.pl.toFixed(2)}` : '—'}</div>
+            {st.worst && <div className="text-[10px] text-muted font-mono">{st.worst.pair} · {st.worst.date}</div>}
+          </div>
+        </div>
       </div>
 
-      {/* Bottom row */}
       <div className="grid grid-cols-2 gap-4">
-        {/* Donut */}
+        <div className="card p-5">
+          <div className="flex items-center justify-between mb-3">
+            <div className="font-semibold text-sm text-zinc-200">Equity Curve</div>
+            <span className="text-xs font-mono px-2 py-0.5 rounded" style={{ background: isUp ? 'rgba(34,197,94,0.1)' : 'rgba(239,68,68,0.1)', color: isUp ? '#22c55e' : '#ef4444' }}>
+              {isUp?'+':''}${st.pl.toFixed(2)}
+            </span>
+          </div>
+          <ResponsiveContainer width="100%" height={120}>
+            <AreaChart data={equity}>
+              <defs>
+                <linearGradient id="geq" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%"   stopColor={isUp?'#22c55e':'#ef4444'} stopOpacity={0.2}/>
+                  <stop offset="100%" stopColor={isUp?'#22c55e':'#ef4444'} stopOpacity={0}/>
+                </linearGradient>
+              </defs>
+              <XAxis dataKey="x" tick={{fill:'#52525b',fontSize:9}} axisLine={false} tickLine={false}/>
+              <YAxis tick={{fill:'#52525b',fontSize:9}} axisLine={false} tickLine={false} width={52} tickFormatter={v=>'$'+v.toLocaleString()}/>
+              <Tooltip content={<TT/>}/>
+              <Area type="monotone" dataKey="v" stroke={isUp?'#22c55e':'#ef4444'} strokeWidth={1.5} fill="url(#geq)" dot={false}/>
+            </AreaChart>
+          </ResponsiveContainer>
+        </div>
+        <div className="card p-5">
+          <div className="flex items-center justify-between mb-3">
+            <div className="font-semibold text-sm text-zinc-200">Drawdown</div>
+            <span className="text-xs font-mono px-2 py-0.5 rounded" style={{ background: 'rgba(239,68,68,0.1)', color: '#ef4444' }}>
+              Max -${maxDD.toFixed(2)}
+            </span>
+          </div>
+          <ResponsiveContainer width="100%" height={120}>
+            <AreaChart data={drawdown}>
+              <defs>
+                <linearGradient id="gdd" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%"   stopColor="#ef4444" stopOpacity={0.25}/>
+                  <stop offset="100%" stopColor="#ef4444" stopOpacity={0}/>
+                </linearGradient>
+              </defs>
+              <XAxis dataKey="x" tick={{fill:'#52525b',fontSize:9}} axisLine={false} tickLine={false}/>
+              <YAxis tick={{fill:'#52525b',fontSize:9}} axisLine={false} tickLine={false} width={52} tickFormatter={v=>'$'+v}/>
+              <Tooltip content={({ active, payload, label }: any) => active && payload?.length ? (
+                <div className="bg-bg2 border border-border2 rounded-lg px-3 py-2 text-xs shadow-xl">
+                  <div className="text-muted mb-0.5">{label}</div>
+                  <div className="font-mono font-medium text-red">-${Number(payload[0].value).toFixed(2)}</div>
+                </div>
+              ) : null}/>
+              <Area type="monotone" dataKey="dd" stroke="#ef4444" strokeWidth={1.5} fill="url(#gdd)" dot={false}/>
+            </AreaChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+
+      <div className="card p-5">
+        <div className="font-semibold text-sm text-zinc-200 mb-4">Weekly P&L Heatmap <span className="text-muted font-normal text-xs ml-1">last 12 weeks</span></div>
+        <div className="flex gap-1">
+          <div className="flex flex-col gap-1 mr-1 justify-around">
+            {['M','T','W','T','F','S','S'].map((d,i) => (
+              <div key={i} className="text-[9px] text-muted w-3 text-center">{d}</div>
+            ))}
+          </div>
+          {heatmap.map((week, wi) => (
+            <div key={wi} className="flex flex-col gap-1 flex-1">
+              {week.days.map((day, di) => {
+                const maxPL = Math.max(...heatmap.flatMap(w => w.days.map(d => Math.abs(d.pl))), 1)
+                const intensity = day.has ? Math.min(Math.abs(day.pl) / maxPL, 1) : 0
+                const bg = !day.has ? '#1c1d22' : day.pl > 0 ? `rgba(34,197,94,${0.15 + intensity * 0.7})` : day.pl < 0 ? `rgba(239,68,68,${0.15 + intensity * 0.7})` : 'rgba(234,179,8,0.3)'
+                return (
+                  <div key={di} title={`${day.date}: ${day.has ? (day.pl>=0?'+':'')+'$'+day.pl : 'no trades'}`}
+                    className="rounded-sm cursor-default transition-transform hover:scale-125"
+                    style={{ background: bg, aspectRatio: '1', minHeight: '12px' }}/>
+                )
+              })}
+            </div>
+          ))}
+        </div>
+        <div className="flex items-center gap-3 mt-3">
+          <span className="text-[9px] text-muted">Less</span>
+          {[0.15,0.35,0.55,0.75,0.9].map((o,i) => <div key={i} className="w-3 h-3 rounded-sm" style={{ background: `rgba(34,197,94,${o})` }}/>)}
+          <span className="text-[9px] text-muted">More profit</span>
+          <div className="w-px h-3 bg-border2 mx-1"/>
+          {[0.15,0.35,0.55,0.75,0.9].map((o,i) => <div key={i} className="w-3 h-3 rounded-sm" style={{ background: `rgba(239,68,68,${o})` }}/>)}
+          <span className="text-[9px] text-muted">More loss</span>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-4">
         <div className="card p-5">
           <div className="font-semibold text-sm text-zinc-200 mb-4">Distribution</div>
           <div className="flex items-center gap-6">
             <Donut wins={st.wins} losses={st.losses} be={st.be}/>
-            <div className="space-y-3">
+            <div className="space-y-3 flex-1">
               {[{l:'Win',v:st.wins,c:'#22c55e'},{l:'Loss',v:st.losses,c:'#ef4444'},{l:'BE',v:st.be,c:'#eab308'}].map(r=>(
-                <div key={r.l} className="flex items-center justify-between gap-4">
+                <div key={r.l} className="flex items-center justify-between">
                   <div className="flex items-center gap-2"><div className="w-2 h-2 rounded-full" style={{background:r.c}}/><span className="text-xs text-muted">{r.l}</span></div>
                   <span className="text-xs font-mono" style={{color:r.c}}>{r.v}</span>
                 </div>
@@ -120,8 +249,6 @@ export default function DashboardPage({ trades, account, onAdd }: Props) {
             </div>
           </div>
         </div>
-
-        {/* Sessions */}
         <div className="card p-5">
           <div className="font-semibold text-sm text-zinc-200 mb-4">Session Breakdown</div>
           <div className="space-y-3">
@@ -131,7 +258,7 @@ export default function DashboardPage({ trades, account, onAdd }: Props) {
                 <div key={s.name}>
                   <div className="flex justify-between text-xs mb-1">
                     <span className="text-muted">{s.name} <span className="text-zinc-500">({s.count})</span></span>
-                    <span className={clsx('font-mono', s.pl>=0?'text-green':'text-red')}>{s.pl>=0?'+':''}${s.pl.toFixed(2)}</span>
+                    <span className="font-mono" style={{color: s.pl>=0?'#22c55e':'#ef4444'}}>{s.pl>=0?'+':''}${s.pl.toFixed(2)}</span>
                   </div>
                   <div className="h-1.5 bg-bg3 rounded-full overflow-hidden">
                     <div className="h-full rounded-full transition-all duration-500" style={{ width: (Math.abs(s.pl)/maxAbs*100)+'%', background: s.pl>=0?'#22c55e':'#ef4444' }}/>

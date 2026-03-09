@@ -25,6 +25,9 @@ export interface Trade {
   strategy: string
   emotion: string
   notes: string
+  screenshotBefore?: string | null
+  screenshotAfter?: string | null
+  /** @deprecated use screenshotBefore */
   screenshotBase64?: string | null
   createdAt: number
 }

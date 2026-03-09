@@ -41,13 +41,38 @@ export function useTrades(accountId: string | null) {
     )
   }, [user, accountId])
 
-  const addTrade = async (data: Omit<Trade,'id'|'userId'|'createdAt'|'screenshotBase64'>, screenshot?: File) => {
+  const addTrade = async (
+    data: Omit<Trade,'id'|'userId'|'createdAt'|'screenshotBase64'|'screenshotBefore'|'screenshotAfter'>,
+    before?: File, after?: File
+  ) => {
     if (!user) return
-    const screenshotBase64 = screenshot ? await b64(screenshot) : null
-    await addDoc(collection(db,'trades'), { ...data, screenshotBase64, userId: user.uid, createdAt: Date.now() })
+    const screenshotBefore = before ? await b64(before) : null
+    const screenshotAfter  = after  ? await b64(after)  : null
+    await addDoc(collection(db,'trades'), {
+      ...data,
+      screenshotBefore,
+      screenshotAfter,
+      screenshotBase64: screenshotBefore,
+      userId: user.uid,
+      createdAt: Date.now()
+    })
+  }
+
+  const updateTrade = async (
+    id: string,
+    data: Omit<Trade,'id'|'userId'|'createdAt'|'screenshotBase64'|'screenshotBefore'|'screenshotAfter'>,
+    before?: File, after?: File,
+    keepBefore?: boolean, keepAfter?: boolean
+  ) => {
+    const update: any = { ...data }
+    update.screenshotBefore = before ? await b64(before) : keepBefore ? undefined : null
+    update.screenshotAfter  = after  ? await b64(after)  : keepAfter  ? undefined : null
+    if (before) update.screenshotBase64 = update.screenshotBefore
+    Object.keys(update).forEach(k => update[k] === undefined && delete update[k])
+    await updateDoc(doc(db,'trades',id), update)
   }
 
   const deleteTrade = (id: string) => deleteDoc(doc(db,'trades',id))
 
-  return { trades, loading, addTrade, deleteTrade }
+  return { trades, loading, addTrade, updateTrade, deleteTrade }
 }
