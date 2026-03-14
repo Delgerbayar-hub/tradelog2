@@ -90,7 +90,7 @@ export default function TradeModal({ isOpen, onClose, onSave, editTrade, userSet
 
   // Auto-compute Profit/Loss/Breakeven label from pnl
   const pnlLabel = form.pnl > 0 ? 'Profit' : form.pnl < 0 ? 'Loss' : 'Breakeven';
-  const pnlColor = form.pnl > 0 ? 'text-emerald-400' : form.pnl < 0 ? 'text-red-400' : 'text-yellow-400';
+  const pnlColor = form.pnl > 0 ? 'text-green' : form.pnl < 0 ? 'text-red' : 'text-yellow';
 
   const set = <K extends keyof typeof form>(key: K, value: typeof form[K]) =>
     setForm(prev => ({ ...prev, [key]: value }));
@@ -142,22 +142,22 @@ export default function TradeModal({ isOpen, onClose, onSave, editTrade, userSet
 
       {/* Modal */}
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-        <div className="bg-gray-900 border border-gray-700 rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col shadow-2xl">
-          
+        <div className="bg-bg2 border border-border2 rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col shadow-2xl">
+
           {/* Header */}
-          <div className="flex items-center justify-between px-6 py-4 border-b border-gray-800">
+          <div className="flex items-center justify-between px-6 py-4 border-b border-border">
             <div className="flex items-center gap-3">
               <h2 className="text-white font-semibold text-lg">
                 {editTrade ? 'Trade засах' : 'Trade бүртгэх'}
               </h2>
               {/* Step tabs */}
-              <div className="flex bg-gray-800 rounded-lg p-1 gap-1">
+              <div className="flex bg-bg3 rounded-lg p-1 gap-1">
                 <button
                   onClick={() => setStep('entry')}
                   className={`px-3 py-1 rounded-md text-xs font-medium transition-all ${
                     step === 'entry'
-                      ? 'bg-cyan-500 text-black'
-                      : 'text-gray-400 hover:text-white'
+                      ? 'bg-accent text-black'
+                      : 'text-muted hover:text-white'
                   }`}
                 >
                   Entry
@@ -166,15 +166,15 @@ export default function TradeModal({ isOpen, onClose, onSave, editTrade, userSet
                   onClick={() => setStep('exit')}
                   className={`px-3 py-1 rounded-md text-xs font-medium transition-all ${
                     step === 'exit'
-                      ? 'bg-purple-500 text-white'
-                      : 'text-gray-400 hover:text-white'
+                      ? 'bg-purple text-white'
+                      : 'text-muted hover:text-white'
                   }`}
                 >
                   Exit
                 </button>
               </div>
             </div>
-            <button onClick={onClose} className="text-gray-400 hover:text-white transition-colors">
+            <button onClick={onClose} className="text-muted hover:text-white transition-colors">
               <X size={20} />
             </button>
           </div>
@@ -223,8 +223,8 @@ export default function TradeModal({ isOpen, onClose, onSave, editTrade, userSet
                         onClick={() => set('pair', p)}
                         className={`px-3 py-1.5 rounded-lg text-sm font-mono font-medium transition-all border ${
                           form.pair === p
-                            ? 'bg-cyan-500 border-cyan-500 text-black'
-                            : 'bg-gray-800 border-gray-700 text-gray-300 hover:border-gray-500'
+                            ? 'bg-accent border-accent text-black'
+                            : 'bg-bg3 border-border2 text-zinc-300 hover:border-muted'
                         }`}
                       >
                         {p}
@@ -240,8 +240,8 @@ export default function TradeModal({ isOpen, onClose, onSave, editTrade, userSet
                       onClick={() => set('direction', 'buy')}
                       className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl border font-semibold text-sm transition-all ${
                         form.direction === 'buy'
-                          ? 'bg-emerald-500/20 border-emerald-500 text-emerald-400'
-                          : 'bg-gray-800 border-gray-700 text-gray-400 hover:border-gray-500'
+                          ? 'bg-green/20 border-green text-green'
+                          : 'bg-bg3 border-border2 text-muted hover:border-muted'
                       }`}
                     >
                       <TrendingUp size={16} /> BUY
@@ -250,8 +250,8 @@ export default function TradeModal({ isOpen, onClose, onSave, editTrade, userSet
                       onClick={() => set('direction', 'sell')}
                       className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl border font-semibold text-sm transition-all ${
                         form.direction === 'sell'
-                          ? 'bg-red-500/20 border-red-500 text-red-400'
-                          : 'bg-gray-800 border-gray-700 text-gray-400 hover:border-gray-500'
+                          ? 'bg-red/20 border-red text-red'
+                          : 'bg-bg3 border-border2 text-muted hover:border-muted'
                       }`}
                     >
                       <TrendingDown size={16} /> SELL
@@ -315,7 +315,7 @@ export default function TradeModal({ isOpen, onClose, onSave, editTrade, userSet
                           className={`flex-1 py-2 rounded-lg text-sm border transition-all ${
                             form.planExecution === p
                               ? 'bg-indigo-500/20 border-indigo-500 text-indigo-300'
-                              : 'bg-gray-800 border-gray-700 text-gray-400'
+                              : 'bg-bg3 border-border2 text-muted'
                           }`}
                         >
                           {p}
@@ -335,7 +335,7 @@ export default function TradeModal({ isOpen, onClose, onSave, editTrade, userSet
                         className={`flex-1 py-2 rounded-lg text-sm border transition-all ${
                           form.confidence === c
                             ? 'bg-orange-500/20 border-orange-500 text-orange-300'
-                            : 'bg-gray-800 border-gray-700 text-gray-400'
+                            : 'bg-bg3 border-border2 text-muted'
                         }`}
                       >
                         {c}
@@ -393,11 +393,11 @@ export default function TradeModal({ isOpen, onClose, onSave, editTrade, userSet
                         className={`flex-1 py-2.5 rounded-xl border font-semibold text-sm transition-all ${
                           form.result === r
                             ? r === 'Win'
-                              ? 'bg-emerald-500/20 border-emerald-500 text-emerald-400'
+                              ? 'bg-green/20 border-green text-green'
                               : r === 'Loss'
-                              ? 'bg-red-500/20 border-red-500 text-red-400'
-                              : 'bg-yellow-500/20 border-yellow-500 text-yellow-400'
-                            : 'bg-gray-800 border-gray-700 text-gray-400'
+                              ? 'bg-red/20 border-red text-red'
+                              : 'bg-yellow/20 border-yellow text-yellow'
+                            : 'bg-bg3 border-border2 text-muted'
                         }`}
                       >
                         {r}
@@ -415,8 +415,8 @@ export default function TradeModal({ isOpen, onClose, onSave, editTrade, userSet
                         onClick={() => set('closedBy', c)}
                         className={`flex-1 py-2 rounded-lg border text-sm font-mono font-semibold transition-all ${
                           form.closedBy === c
-                            ? 'bg-purple-500/20 border-purple-500 text-purple-300'
-                            : 'bg-gray-800 border-gray-700 text-gray-400'
+                            ? 'bg-purple/20 border-purple text-purple'
+                            : 'bg-bg3 border-border2 text-muted'
                         }`}
                       >
                         {c}
@@ -487,7 +487,7 @@ export default function TradeModal({ isOpen, onClose, onSave, editTrade, userSet
           </div>
 
           {/* Footer */}
-          <div className="px-6 py-4 border-t border-gray-800 flex items-center justify-between gap-3">
+          <div className="px-6 py-4 border-t border-border flex items-center justify-between gap-3">
             {step === 'entry' ? (
               <>
                 <button onClick={onClose} className={btnSecondary}>Цуцлах</button>
@@ -513,15 +513,15 @@ export default function TradeModal({ isOpen, onClose, onSave, editTrade, userSet
 // ── Sub-components ──
 
 const inputCls =
-  'w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-gray-500 transition-colors placeholder-gray-500';
+  'w-full bg-bg3 border border-border2 rounded-xl px-4 py-2.5 text-zinc-100 text-sm focus:outline-none focus:border-accent/50 transition-colors placeholder-muted';
 
 const btnSecondary =
-  'px-4 py-2 rounded-xl border border-gray-700 text-gray-300 text-sm hover:bg-gray-800 transition-all';
+  'px-4 py-2 rounded-xl border border-border2 text-zinc-300 text-sm hover:bg-bg3 transition-all';
 
 const btnPrimary = (color: 'cyan' | 'purple') =>
   color === 'cyan'
-    ? 'px-6 py-2 rounded-xl bg-cyan-500 text-black font-semibold text-sm hover:bg-cyan-400 transition-all'
-    : 'px-6 py-2 rounded-xl bg-purple-500 text-white font-semibold text-sm hover:bg-purple-400 transition-all';
+    ? 'px-6 py-2 rounded-xl bg-accent text-black font-semibold text-sm hover:opacity-90 transition-all'
+    : 'px-6 py-2 rounded-xl bg-purple text-white font-semibold text-sm hover:opacity-90 transition-all';
 
 function NumericInput({ value, onChange, step, min }: {
   value: number;
@@ -562,7 +562,7 @@ function NumericInput({ value, onChange, step, min }: {
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="space-y-1.5">
-      <label className="text-xs font-medium text-gray-400 uppercase tracking-wider">{label}</label>
+      <label className="label">{label}</label>
       {children}
     </div>
   );
@@ -585,12 +585,12 @@ function Select({
         className={`${inputCls} appearance-none pr-8 cursor-pointer`}
       >
         {options.map(o => (
-          <option key={o} value={o} className="bg-gray-900">
+          <option key={o} value={o} className="bg-bg2">
             {o}
           </option>
         ))}
       </select>
-      <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+      <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted pointer-events-none" />
     </div>
   );
 }
@@ -610,13 +610,13 @@ function ImageUploader({
   inputRef: React.RefObject<HTMLInputElement>;
   accentColor: 'cyan' | 'purple';
 }) {
-  const accent = accentColor === 'cyan' ? 'border-cyan-500/50 hover:border-cyan-400' : 'border-purple-500/50 hover:border-purple-400';
-  const labelAccent = accentColor === 'cyan' ? 'text-cyan-400' : 'text-purple-400';
+  const accent = accentColor === 'cyan' ? 'border-accent/50 hover:border-accent' : 'border-purple/50 hover:border-purple';
+  const labelAccent = accentColor === 'cyan' ? 'text-accent' : 'text-purple';
 
   return (
     <div className="flex gap-3">
       {images.map((img, idx) => (
-        <div key={idx} className="relative group w-24 h-16 rounded-lg overflow-hidden border border-gray-700">
+        <div key={idx} className="relative group w-24 h-16 rounded-lg overflow-hidden border border-border2">
           <img
             src={img}
             alt={`screenshot ${idx + 1}`}

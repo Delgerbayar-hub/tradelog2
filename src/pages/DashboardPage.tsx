@@ -1,11 +1,11 @@
 // src/pages/DashboardPage.tsx
-import React, { useMemo } from 'react'
+import React, { useMemo, useState } from 'react'
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, BarChart, Bar, Cell } from 'recharts'
 import { Activity, Target, TrendingUp, TrendingDown, Zap, Flame, Trophy, AlertTriangle } from 'lucide-react'
-import type { Trade, Account } from '../types'
+import type { Trade, UserSettings } from '../types'
 import clsx from 'clsx'
 
-interface Props { trades: Trade[]; account?: Account | null; onAdd?: () => void }
+interface Props { trades: Trade[]; userSettings?: UserSettings | null; onAdd?: () => void }
 
 const TT = ({ active, payload, label }: any) => active && payload?.length ? (
   <div className="bg-bg2 border border-border2 rounded-lg px-3 py-2 text-xs shadow-xl">
@@ -14,46 +14,54 @@ const TT = ({ active, payload, label }: any) => active && payload?.length ? (
   </div>
 ) : null
 
-export default function DashboardPage({ trades, account, onAdd }: Props) {
+export default function DashboardPage({ trades, userSettings, onAdd }: Props) {
+  const accounts = userSettings?.accounts ?? []
+  const [selectedAccount, setSelectedAccount] = useState<string>('All')
+
+  const filteredTrades = useMemo(() =>
+    selectedAccount === 'All' ? trades : trades.filter(t => t.account === selectedAccount)
+  , [trades, selectedAccount])
+
+  const activeAccount = accounts.find(a => a.name === selectedAccount)
   const st = useMemo(() => {
-    const n = trades.length
-    const wins   = trades.filter(t => t.result === 'Win').length
-    const losses = trades.filter(t => t.result === 'Loss').length
-    const be     = trades.filter(t => t.result === 'Breakeven').length
-    const pl     = trades.reduce((s,t) => s + t.pnl, 0)
+    const n = filteredTrades.length
+    const wins   = filteredTrades.filter(t => t.result === 'Win').length
+    const losses = filteredTrades.filter(t => t.result === 'Loss').length
+    const be     = filteredTrades.filter(t => t.result === 'Breakeven').length
+    const pl     = filteredTrades.reduce((s,t) => s + t.pnl, 0)
     const wr     = n ? (wins / n * 100).toFixed(1) : '0'
-    const avgRR  = n ? (trades.reduce((s,t) => s + (t.gainRR||0), 0) / n).toFixed(2) : '0'
-    const pf     = (() => { const gp = trades.filter(t=>t.pnl>0).reduce((s,t)=>s+t.pnl,0); const gl = Math.abs(trades.filter(t=>t.pnl<0).reduce((s,t)=>s+t.pnl,0)); return gl ? (gp/gl).toFixed(2) : '∞' })()
-    const sorted = [...trades].sort((a,b) => a.date.localeCompare(b.date) || a.createdAt.getTime() - b.createdAt.getTime())
+    const avgRR  = n ? (filteredTrades.reduce((s,t) => s + (t.gainRR||0), 0) / n).toFixed(2) : '0'
+    const pf     = (() => { const gp = filteredTrades.filter(t=>t.pnl>0).reduce((s,t)=>s+t.pnl,0); const gl = Math.abs(filteredTrades.filter(t=>t.pnl<0).reduce((s,t)=>s+t.pnl,0)); return gl ? (gp/gl).toFixed(2) : '∞' })()
+    const sorted = [...filteredTrades].sort((a,b) => a.date.localeCompare(b.date) || a.createdAt.getTime() - b.createdAt.getTime())
     let streak = 0
     for (let i = sorted.length - 1; i >= 0; i--) {
       if (sorted[i].result === 'Win') streak++
       else break
     }
-    const best  = trades.reduce((b,t) => t.pnl > b.pnl ? t : b, trades[0] || null)
-    const worst = trades.reduce((w,t) => t.pnl < w.pnl ? t : w, trades[0] || null)
+    const best  = filteredTrades.reduce((b,t) => t.pnl > b.pnl ? t : b, filteredTrades[0] || null)
+    const worst = filteredTrades.reduce((w,t) => t.pnl < w.pnl ? t : w, filteredTrades[0] || null)
     return { n, wins, losses, be, pl, wr, avgRR, pf, streak, best, worst }
-  }, [trades])
+  }, [filteredTrades])
 
   const equity = useMemo(() => {
-    const init = account?.initBalance ?? 10000
+    const init = activeAccount?.balance ?? 10000
     let bal = init
     const pts = [{ x: 'Start', v: init }]
-    ;[...trades].sort((a,b)=>a.date.localeCompare(b.date)).forEach(t => { bal += t.pnl; pts.push({ x: t.date.slice(5), v: +bal.toFixed(2) }) })
+    ;[...filteredTrades].sort((a,b)=>a.date.localeCompare(b.date)).forEach(t => { bal += t.pnl; pts.push({ x: t.date.slice(5), v: +bal.toFixed(2) }) })
     return pts
-  }, [trades, account])
+  }, [filteredTrades, activeAccount])
 
   const drawdown = useMemo(() => {
-    let peak = account?.initBalance ?? 10000
+    let peak = activeAccount?.balance ?? 10000
     let bal  = peak
     const pts: { x: string; dd: number }[] = [{ x: 'Start', dd: 0 }]
-    ;[...trades].sort((a,b)=>a.date.localeCompare(b.date)).forEach(t => {
+    ;[...filteredTrades].sort((a,b)=>a.date.localeCompare(b.date)).forEach(t => {
       bal += t.pnl
       if (bal > peak) peak = bal
       pts.push({ x: t.date.slice(5), dd: +((peak - bal)).toFixed(2) })
     })
     return pts
-  }, [trades, account])
+  }, [filteredTrades, activeAccount])
 
   // const heatmap = useMemo(() => {
   //   const weeks: { week: string; days: { date: string; pl: number; has: boolean }[] }[] = []
@@ -75,10 +83,10 @@ export default function DashboardPage({ trades, account, onAdd }: Props) {
 
   const sessions = useMemo(() =>
     ['Asian','London','New York'].map(s => ({
-      name: s, count: trades.filter(t=>t.session===s).length,
-      pl: trades.filter(t=>t.session===s).reduce((s,t)=>s+t.pnl,0),
+      name: s, count: filteredTrades.filter(t=>t.session===s).length,
+      pl: filteredTrades.filter(t=>t.session===s).reduce((a,t)=>a+t.pnl,0),
     }))
-  , [trades])
+  , [filteredTrades])
 
   const isUp  = st.pl >= 0
   const today = new Date().toLocaleDateString('en-US', { weekday:'long', month:'long', day:'numeric' })
@@ -107,7 +115,36 @@ export default function DashboardPage({ trades, account, onAdd }: Props) {
           <h1 className="text-xl font-bold text-zinc-100 tracking-tight">Dashboard</h1>
           <p className="text-sm text-muted mt-0.5">{today}</p>
         </div>
-        <button onClick={onAdd} className="btn-primary">+ Log Trade</button>
+        <div className="flex items-center gap-3">
+          {accounts.length > 0 && (
+            <div className="flex items-center gap-1.5 bg-bg2 border border-border2 rounded-xl px-1.5 py-1.5">
+              <button
+                onClick={() => setSelectedAccount('All')}
+                className={`px-3 py-1 rounded-lg text-xs font-medium transition-all ${
+                  selectedAccount === 'All'
+                    ? 'bg-zinc-700 text-zinc-100'
+                    : 'text-muted hover:text-zinc-300'
+                }`}
+              >
+                Бүгд
+              </button>
+              {accounts.map(a => (
+                <button
+                  key={a.name}
+                  onClick={() => setSelectedAccount(a.name)}
+                  className={`px-3 py-1 rounded-lg text-xs font-medium transition-all ${
+                    selectedAccount === a.name
+                      ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/30'
+                      : 'text-muted hover:text-zinc-300'
+                  }`}
+                >
+                  {a.name}
+                </button>
+              ))}
+            </div>
+          )}
+          <button onClick={onAdd} className="btn-primary">+ Log Trade</button>
+        </div>
       </div>
 
       <div className="grid grid-cols-4 gap-3">

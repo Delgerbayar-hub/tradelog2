@@ -113,13 +113,13 @@ export default function TradesPage({
           <div className="flex items-center gap-2 flex-wrap">
             {/* Search */}
             <div className="relative">
-              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
               <input
                 type="text"
                 value={search}
                 onChange={e => setSearch(e.target.value)}
                 placeholder="Хайх..."
-                className="bg-gray-800 border border-gray-700 rounded-xl pl-8 pr-4 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-gray-500 w-48"
+                className="input pl-8 w-48"
               />
             </div>
 
@@ -130,11 +130,11 @@ export default function TradesPage({
                 onClick={() => setFilterResult(f)}
                 className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-all ${
                   filterResult === f
-                    ? f === 'Win' ? 'bg-emerald-500/20 border-emerald-500 text-emerald-400'
-                    : f === 'Loss' ? 'bg-red-500/20 border-red-500 text-red-400'
-                    : f === 'Breakeven' ? 'bg-yellow-500/20 border-yellow-500 text-yellow-400'
-                    : 'bg-gray-700 border-gray-600 text-white'
-                    : 'bg-gray-800 border-gray-700 text-gray-400 hover:border-gray-500'
+                    ? f === 'Win' ? 'bg-green/20 border-green text-green'
+                    : f === 'Loss' ? 'bg-red/20 border-red text-red'
+                    : f === 'Breakeven' ? 'bg-yellow/20 border-yellow text-yellow'
+                    : 'bg-bg3 border-border text-zinc-100'
+                    : 'bg-bg3 border-border2 text-muted hover:border-muted'
                 }`}
               >
                 {f}
@@ -143,14 +143,14 @@ export default function TradesPage({
 
             <button
               onClick={exportCSV}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-gray-700 text-gray-300 text-xs hover:bg-gray-800 transition-all"
+              className="btn-ghost"
             >
               <Download size={13} /> Export
             </button>
 
             <button
               onClick={() => { setEditTrade(null); setModalOpen(true); }}
-              className="flex items-center gap-1.5 px-4 py-1.5 rounded-xl bg-cyan-500 text-black text-sm font-semibold hover:bg-cyan-400 transition-all"
+              className="btn-primary"
             >
               <Plus size={15} /> Trade
             </button>
@@ -161,13 +161,13 @@ export default function TradesPage({
         <StatsRow trades={filtered} />
 
         {/* Table */}
-        <div className="bg-gray-900 border border-gray-800 rounded-2xl overflow-hidden">
+        <div className="card overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-gray-800">
+                <tr className="border-b border-border">
                   {['Date','Pair','Dir','Session','Setup','R:R','Result','PNL',''].map(h => (
-                    <th key={h} className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider px-4 py-3">
+                    <th key={h} className="text-left text-xs font-medium text-muted uppercase tracking-wider px-4 py-3">
                       {h}
                     </th>
                   ))}
@@ -176,7 +176,7 @@ export default function TradesPage({
               <tbody>
                 {filtered.length === 0 && (
                   <tr>
-                    <td colSpan={9} className="text-center text-gray-500 py-12">
+                    <td colSpan={9} className="text-center text-muted py-12">
                       Trade байхгүй байна
                     </td>
                   </tr>
@@ -184,25 +184,25 @@ export default function TradesPage({
                 {filtered.map(trade => (
                   <React.Fragment key={trade.id}>
                     <tr
-                      className="border-b border-gray-800/50 hover:bg-gray-800/30 transition-colors cursor-pointer"
+                      className="border-b border-border/50 hover:bg-bg3/40 transition-colors cursor-pointer"
                       onClick={() => setExpandedId(expandedId === trade.id ? null : trade.id)}
                     >
-                      <td className="px-4 py-3 text-gray-300 whitespace-nowrap">{trade.date}</td>
+                      <td className="px-4 py-3 text-zinc-300 whitespace-nowrap">{trade.date}</td>
                       <td className="px-4 py-3 font-mono text-white font-medium">{trade.pair}</td>
                       <td className="px-4 py-3">
                         {trade.direction === 'buy'
-                          ? <span className="flex items-center gap-1 text-emerald-400"><TrendingUp size={13}/> BUY</span>
-                          : <span className="flex items-center gap-1 text-red-400"><TrendingDown size={13}/> SELL</span>
+                          ? <span className="flex items-center gap-1 text-green"><TrendingUp size={13}/> BUY</span>
+                          : <span className="flex items-center gap-1 text-red"><TrendingDown size={13}/> SELL</span>
                         }
                       </td>
-                      <td className="px-4 py-3 text-gray-400">{trade.session}</td>
-                      <td className="px-4 py-3 text-gray-300 max-w-[120px] truncate">{trade.setup || '—'}</td>
-                      <td className="px-4 py-3 font-mono text-gray-300">{trade.rrRatio}</td>
+                      <td className="px-4 py-3 text-muted">{trade.session}</td>
+                      <td className="px-4 py-3 text-zinc-300 max-w-[120px] truncate">{trade.setup || '—'}</td>
+                      <td className="px-4 py-3 font-mono text-zinc-300">{trade.rrRatio}</td>
                       <td className="px-4 py-3">
                         <ResultBadge result={trade.result} />
                       </td>
                       <td className={`px-4 py-3 font-mono font-semibold ${
-                        trade.pnl > 0 ? 'text-emerald-400' : trade.pnl < 0 ? 'text-red-400' : 'text-yellow-400'
+                        trade.pnl > 0 ? 'text-green' : trade.pnl < 0 ? 'text-red' : 'text-yellow'
                       }`}>
                         {trade.pnl > 0 ? '+' : ''}{trade.pnl?.toFixed(2) ?? '0.00'}
                       </td>
@@ -210,19 +210,19 @@ export default function TradesPage({
                         <div className="flex items-center gap-2" onClick={e => e.stopPropagation()}>
                           <button
                             onClick={() => handleEdit(trade)}
-                            className="p-1.5 rounded-lg hover:bg-gray-700 text-gray-400 hover:text-cyan-400 transition-all"
+                            className="btn-icon"
                           >
                             <Pencil size={13} />
                           </button>
                           <button
                             onClick={() => handleDelete(trade.id)}
-                            className="p-1.5 rounded-lg hover:bg-gray-700 text-gray-400 hover:text-red-400 transition-all"
+                            className="btn-icon hover:text-red"
                           >
                             <Trash2 size={13} />
                           </button>
                           {expandedId === trade.id
-                            ? <ChevronUp size={14} className="text-gray-400" />
-                            : <ChevronDown size={14} className="text-gray-400" />
+                            ? <ChevronUp size={14} className="text-muted" />
+                            : <ChevronDown size={14} className="text-muted" />
                           }
                         </div>
                       </td>
@@ -230,7 +230,7 @@ export default function TradesPage({
 
                     {/* Expanded row */}
                     {expandedId === trade.id && (
-                      <tr key={`${trade.id}-exp`} className="bg-gray-800/20">
+                      <tr key={`${trade.id}-exp`} className="bg-bg3/30">
                         <td colSpan={9} className="px-6 py-5">
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             {/* Left: details */}
@@ -246,14 +246,14 @@ export default function TradesPage({
                               <DetailRow label="Gain %" value={`${trade.gainPercent}%`} />
                               {trade.entryDetails && (
                                 <div>
-                                  <span className="text-gray-500 text-xs uppercase tracking-wider">Entry Details</span>
-                                  <p className="text-gray-300 mt-1 text-sm leading-relaxed">{trade.entryDetails}</p>
+                                  <span className="text-muted text-xs uppercase tracking-wider">Entry Details</span>
+                                  <p className="text-zinc-300 mt-1 text-sm leading-relaxed">{trade.entryDetails}</p>
                                 </div>
                               )}
                               {trade.review && (
                                 <div>
-                                  <span className="text-gray-500 text-xs uppercase tracking-wider">Review</span>
-                                  <p className="text-gray-300 mt-1 text-sm leading-relaxed">{trade.review}</p>
+                                  <span className="text-muted text-xs uppercase tracking-wider">Review</span>
+                                  <p className="text-zinc-300 mt-1 text-sm leading-relaxed">{trade.review}</p>
                                 </div>
                               )}
                             </div>
@@ -262,14 +262,14 @@ export default function TradesPage({
                             <div className="space-y-4">
                               {trade.screenshotBefore?.length > 0 && (
                                 <div>
-                                  <span className="text-xs font-medium text-cyan-400 uppercase tracking-wider">Before</span>
+                                  <span className="text-xs font-medium text-accent uppercase tracking-wider">Before</span>
                                   <div className="flex gap-2 mt-2">
                                     {trade.screenshotBefore.map((img, i) => (
                                       <img
                                         key={i}
                                         src={img}
                                         alt={`before ${i+1}`}
-                                        className="w-32 h-20 object-cover rounded-lg border border-cyan-500/30 cursor-pointer hover:border-cyan-400 transition-all"
+                                        className="w-32 h-20 object-cover rounded-lg border border-accent/30 cursor-pointer hover:border-accent transition-all"
                                         onClick={() => setLightbox(img)}
                                       />
                                     ))}
@@ -278,14 +278,14 @@ export default function TradesPage({
                               )}
                               {trade.screenshotAfter?.length > 0 && (
                                 <div>
-                                  <span className="text-xs font-medium text-purple-400 uppercase tracking-wider">After</span>
+                                  <span className="text-xs font-medium text-purple uppercase tracking-wider">After</span>
                                   <div className="flex gap-2 mt-2">
                                     {trade.screenshotAfter.map((img, i) => (
                                       <img
                                         key={i}
                                         src={img}
                                         alt={`after ${i+1}`}
-                                        className="w-32 h-20 object-cover rounded-lg border border-purple-500/30 cursor-pointer hover:border-purple-400 transition-all"
+                                        className="w-32 h-20 object-cover rounded-lg border border-purple/30 cursor-pointer hover:border-purple transition-all"
                                         onClick={() => setLightbox(img)}
                                       />
                                     ))}
@@ -321,16 +321,16 @@ function StatsRow({ trades }: { trades: Trade[] }) {
     <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
       {[
         { label: 'Нийт', value: total.toString(), color: 'text-white' },
-        { label: 'Win Rate', value: `${winRate}%`, color: 'text-emerald-400' },
-        { label: 'Win / Loss', value: `${wins} / ${losses}`, color: 'text-gray-300' },
+        { label: 'Win Rate', value: `${winRate}%`, color: 'text-green' },
+        { label: 'Win / Loss', value: `${wins} / ${losses}`, color: 'text-zinc-300' },
         {
           label: 'Total PNL',
           value: `${totalPnl >= 0 ? '+' : ''}${totalPnl.toFixed(2)}`,
-          color: totalPnl >= 0 ? 'text-emerald-400' : 'text-red-400'
+          color: totalPnl >= 0 ? 'text-green' : 'text-red'
         },
       ].map(s => (
-        <div key={s.label} className="bg-gray-900 border border-gray-800 rounded-xl px-4 py-3">
-          <div className="text-xs text-gray-500 uppercase tracking-wider mb-1">{s.label}</div>
+        <div key={s.label} className="card p-4 relative overflow-hidden">
+          <div className="text-xs text-muted uppercase tracking-wider mb-1">{s.label}</div>
           <div className={`text-lg font-semibold font-mono ${s.color}`}>{s.value}</div>
         </div>
       ))}
@@ -340,11 +340,11 @@ function StatsRow({ trades }: { trades: Trade[] }) {
 
 function ResultBadge({ result }: { result: Trade['result'] }) {
   const cls =
-    result === 'Win' ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30'
-    : result === 'Loss' ? 'bg-red-500/15 text-red-400 border-red-500/30'
-    : 'bg-yellow-500/15 text-yellow-400 border-yellow-500/30';
+    result === 'Win' ? 'badge-win'
+    : result === 'Loss' ? 'badge-loss'
+    : 'badge-be';
   return (
-    <span className={`px-2 py-0.5 rounded-md text-xs font-medium border ${cls}`}>
+    <span className={cls}>
       {result}
     </span>
   );
@@ -354,8 +354,8 @@ function DetailRow({ label, value }: { label: string; value?: string }) {
   if (!value) return null;
   return (
     <div className="flex items-center gap-2">
-      <span className="text-gray-500 text-xs w-24 shrink-0">{label}</span>
-      <span className="text-gray-300">{value}</span>
+      <span className="text-muted text-xs w-24 shrink-0">{label}</span>
+      <span className="text-zinc-300">{value}</span>
     </div>
   );
 }

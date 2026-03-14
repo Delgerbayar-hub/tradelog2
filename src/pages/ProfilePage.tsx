@@ -38,11 +38,11 @@ function AddAccountModal({ onClose, onSave, existing }: {
     <>
       <div className="fixed inset-0 z-40 bg-black/70 backdrop-blur-sm" onClick={onClose} />
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-        <div className="bg-gray-900 border border-gray-700 rounded-2xl w-full max-w-sm shadow-2xl">
+        <div className="bg-bg2 border border-border2 rounded-2xl w-full max-w-sm shadow-2xl">
           {/* Header */}
-          <div className="flex items-center justify-between px-6 py-4 border-b border-gray-800">
+          <div className="flex items-center justify-between px-6 py-4 border-b border-border">
             <h2 className="text-white font-semibold">Данс нэмэх</h2>
-            <button onClick={onClose} className="text-gray-400 hover:text-white transition-colors">
+            <button onClick={onClose} className="text-muted hover:text-white transition-colors">
               <X size={18} />
             </button>
           </div>
@@ -50,46 +50,46 @@ function AddAccountModal({ onClose, onSave, existing }: {
           {/* Body */}
           <div className="px-6 py-5 space-y-4">
             <div>
-              <label className="text-xs text-gray-400 uppercase tracking-wider mb-1.5 block">Дансны нэр</label>
+              <label className="label">Дансны нэр</label>
               <input
                 autoFocus
                 type="text"
                 value={form.name}
                 onChange={e => { setForm(f => ({ ...f, name: e.target.value })); setError(''); }}
                 placeholder="Live, Demo, Prop..."
-                className="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-cyan-500/50 transition-colors"
+                className="input"
               />
             </div>
             <div>
-              <label className="text-xs text-gray-400 uppercase tracking-wider mb-1.5 block">Эхлэх баланс ($)</label>
+              <label className="label">Эхлэх баланс ($)</label>
               <input
                 type="number"
                 value={form.balance}
                 onChange={e => { setForm(f => ({ ...f, balance: e.target.value })); setError(''); }}
                 placeholder="10000"
-                className="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-cyan-500/50 transition-colors"
+                className="input"
               />
             </div>
             <div>
-              <label className="text-xs text-gray-400 uppercase tracking-wider mb-1.5 block">Зорилго ($)</label>
+              <label className="label">Зорилго ($)</label>
               <input
                 type="number"
                 value={form.goal}
                 onChange={e => { setForm(f => ({ ...f, goal: e.target.value })); setError(''); }}
                 placeholder="15000"
                 onKeyDown={e => e.key === 'Enter' && handleSave()}
-                className="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-cyan-500/50 transition-colors"
+                className="input"
               />
             </div>
-            {error && <p className="text-red-400 text-xs">{error}</p>}
+            {error && <p className="text-red text-xs">{error}</p>}
           </div>
 
           {/* Footer */}
-          <div className="flex gap-3 px-6 py-4 border-t border-gray-800">
-            <button onClick={onClose} className="flex-1 px-4 py-2 rounded-xl border border-gray-700 text-gray-300 text-sm hover:bg-gray-800 transition-all">
+          <div className="flex gap-3 px-6 py-4 border-t border-border">
+            <button onClick={onClose} className="btn-ghost flex-1 justify-center">
               Цуцлах
             </button>
-            <button onClick={handleSave} className="flex-1 px-4 py-2 rounded-xl bg-cyan-500 text-black text-sm font-semibold hover:bg-cyan-400 transition-all">
+            <button onClick={handleSave} className="btn-primary flex-1 justify-center">
               Нэмэх
             </button>
           </div>
@@ -125,17 +125,17 @@ export default function ProfilePage({ user, userSettings, trades, onUpdateSettin
       <h1 className="text-white text-xl font-semibold">Profile</h1>
 
       {/* User info */}
-      <div className="bg-gray-900 border border-gray-800 rounded-2xl p-5 flex items-center gap-4">
+      <div className="card p-5 flex items-center gap-4">
         {user.photoURL ? (
           <img src={user.photoURL} className="w-14 h-14 rounded-full" alt="avatar" />
         ) : (
-          <div className="w-14 h-14 rounded-full bg-cyan-500/20 flex items-center justify-center text-cyan-400 text-xl font-bold">
+          <div className="w-14 h-14 rounded-full bg-accent/20 flex items-center justify-center text-accent text-xl font-bold">
             {user.displayName?.[0] ?? user.email?.[0] ?? '?'}
           </div>
         )}
         <div>
           <p className="text-white font-medium">{user.displayName || '—'}</p>
-          <p className="text-gray-400 text-sm">{user.email}</p>
+          <p className="text-muted text-sm">{user.email}</p>
         </div>
       </div>
 
@@ -145,14 +145,14 @@ export default function ProfilePage({ user, userSettings, trades, onUpdateSettin
           <h2 className="text-white font-medium">Арилжааны Данснууд</h2>
           <button
             onClick={() => setShowModal(true)}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-cyan-500 text-black text-sm font-semibold hover:bg-cyan-400 transition-all"
+            className="btn-primary"
           >
             <Plus size={14} /> Данс нэмэх
           </button>
         </div>
 
         {accounts.length === 0 && (
-          <div className="bg-gray-900 border border-gray-800 rounded-2xl p-8 text-center text-gray-500 text-sm">
+          <div className="card p-8 text-center text-muted text-sm">
             Данс байхгүй байна
           </div>
         )}
@@ -169,56 +169,56 @@ export default function ProfilePage({ user, userSettings, trades, onUpdateSettin
           const isUp = totalPnl >= 0;
 
           return (
-            <div key={acc.name} className="bg-gray-900 border border-gray-800 rounded-2xl p-5 group">
+            <div key={acc.name} className="card p-5 group">
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 rounded-full bg-cyan-400" />
+                  <div className="w-2 h-2 rounded-full bg-accent" />
                   <span className="text-white font-semibold">{acc.name}</span>
-                  <span className="text-xs text-gray-500">{accTrades.length} trade</span>
+                  <span className="text-xs text-muted">{accTrades.length} trade</span>
                 </div>
                 <button
                   onClick={() => removeAccount(acc.name)}
-                  className="text-gray-700 hover:text-red-400 transition-colors opacity-0 group-hover:opacity-100"
+                  className="text-border2 hover:text-red transition-colors opacity-0 group-hover:opacity-100"
                 >
                   <Trash2 size={14} />
                 </button>
               </div>
 
               <div className="grid grid-cols-3 gap-3 mb-4">
-                <div className="bg-gray-800 rounded-xl px-3 py-2.5">
-                  <div className="text-xs text-gray-500 mb-1">Win Rate</div>
-                  <div className={`text-lg font-bold font-mono ${wr === null ? 'text-gray-500' : parseFloat(wr) >= 50 ? 'text-emerald-400' : 'text-red-400'}`}>
+                <div className="bg-bg3 rounded-xl px-3 py-2.5">
+                  <div className="text-xs text-muted mb-1">Win Rate</div>
+                  <div className={`text-lg font-bold font-mono ${wr === null ? 'text-muted' : parseFloat(wr) >= 50 ? 'text-green' : 'text-red'}`}>
                     {wr !== null ? `${wr}%` : '—'}
                   </div>
                 </div>
-                <div className="bg-gray-800 rounded-xl px-3 py-2.5">
-                  <div className="text-xs text-gray-500 mb-1">Balance</div>
-                  <div className={`text-lg font-bold font-mono ${isUp ? 'text-emerald-400' : 'text-red-400'}`}>
+                <div className="bg-bg3 rounded-xl px-3 py-2.5">
+                  <div className="text-xs text-muted mb-1">Balance</div>
+                  <div className={`text-lg font-bold font-mono ${isUp ? 'text-green' : 'text-red'}`}>
                     ${current.toLocaleString()}
                   </div>
                   {accTrades.length > 0 && (
-                    <div className="text-xs text-gray-600 font-mono">
+                    <div className="text-xs text-muted font-mono">
                       {isUp ? '+' : ''}${totalPnl.toFixed(0)}
                     </div>
                   )}
                 </div>
-                <div className="bg-gray-800 rounded-xl px-3 py-2.5">
-                  <div className="flex items-center gap-1 text-xs text-gray-500 mb-1">
+                <div className="bg-bg3 rounded-xl px-3 py-2.5">
+                  <div className="flex items-center gap-1 text-xs text-muted mb-1">
                     <Target size={10} /> Goal
                   </div>
-                  <div className="text-lg font-bold font-mono text-yellow-400">
+                  <div className="text-lg font-bold font-mono text-yellow">
                     ${acc.goal.toLocaleString()}
                   </div>
                 </div>
               </div>
 
               <div>
-                <div className="flex justify-between text-xs text-gray-500 mb-1.5">
+                <div className="flex justify-between text-xs text-muted mb-1.5">
                   <span>${acc.balance.toLocaleString()}</span>
-                  <span className="text-yellow-400 font-medium">{progress.toFixed(0)}%</span>
+                  <span className="text-yellow font-medium">{progress.toFixed(0)}%</span>
                   <span>${acc.goal.toLocaleString()}</span>
                 </div>
-                <div className="h-2 bg-gray-800 rounded-full overflow-hidden">
+                <div className="h-2 bg-bg3 rounded-full overflow-hidden">
                   <div
                     className="h-full rounded-full transition-all duration-500"
                     style={{
