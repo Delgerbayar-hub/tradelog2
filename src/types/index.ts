@@ -66,4 +66,7 @@ export interface UserSettings {
   pairs: string[];
   accounts: TradingAccount[];
   defaultRiskPercent?: number;
+  displayName?: string;
+  avatarBase64?: string;
+  bio?: string;
 }

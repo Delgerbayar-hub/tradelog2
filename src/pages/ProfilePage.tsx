@@ -1,8 +1,11 @@
 // src/pages/ProfilePage.tsx
-import { useState } from 'react';
-import { User } from 'firebase/auth';
-import { Plus, Trash2, Target, X } from 'lucide-react';
+import { useState, useRef } from 'react';
+import { User, updateProfile } from 'firebase/auth';
+import { Plus, Trash2, Target, X, Pencil, Check, Camera, Quote, TrendingUp, TrendingDown, BarChart2, Wallet } from 'lucide-react';
 import { Trade, TradingAccount, UserSettings } from '../types';
+import { auth } from '../lib/firebase';
+
+const DEFAULT_PAIRS = ['XAUUSD', 'EURUSD', 'GBPUSD', 'USDJPY', 'NASDAQ'];
 
 interface ProfilePageProps {
   user: User;
@@ -11,87 +14,27 @@ interface ProfilePageProps {
   onUpdateSettings: (s: Partial<UserSettings>) => void;
 }
 
-const EMPTY_FORM = { name: '', balance: '', goal: '' };
+// ── Shared Modal shell ────────────────────────────────────────────────────────
 
-function AddAccountModal({ onClose, onSave, existing }: {
-  onClose: () => void;
-  onSave: (a: TradingAccount) => void;
-  existing: string[];
+function Modal({ title, onClose, onSave, saveLabel = 'Нэмэх', children }: {
+  title: string; onClose: () => void; onSave: () => void;
+  saveLabel?: string; children: React.ReactNode;
 }) {
-  const [form, setForm] = useState(EMPTY_FORM);
-  const [error, setError] = useState('');
-
-  const handleSave = () => {
-    const name    = form.name.trim();
-    const balance = parseFloat(form.balance);
-    const goal    = parseFloat(form.goal);
-    if (!name)                          return setError('Нэр оруулна уу');
-    if (existing.includes(name))        return setError('Ийм нэртэй данс аль хэдийн байна');
-    if (isNaN(balance) || balance <= 0) return setError('Эхлэх баланс оруулна уу');
-    if (isNaN(goal)    || goal    <= 0) return setError('Зорилго оруулна уу');
-    if (goal <= balance)                return setError('Зорилго нь эхлэх балансаас их байх ёстой');
-    onSave({ name, balance, goal });
-    onClose();
-  };
-
   return (
     <>
-      <div className="fixed inset-0 z-40 bg-black/70 backdrop-blur-sm" onClick={onClose} />
+      <div className="fixed inset-0 z-40 bg-black/75 backdrop-blur-sm" onClick={onClose} />
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
         <div className="bg-bg2 border border-border2 rounded-2xl w-full max-w-sm shadow-2xl">
-          {/* Header */}
           <div className="flex items-center justify-between px-6 py-4 border-b border-border">
-            <h2 className="text-white font-semibold">Данс нэмэх</h2>
-            <button onClick={onClose} className="text-muted hover:text-white transition-colors">
+            <h2 className="text-white font-semibold text-[15px]">{title}</h2>
+            <button onClick={onClose} className="text-muted hover:text-white transition-colors p-1">
               <X size={18} />
             </button>
           </div>
-
-          {/* Body */}
-          <div className="px-6 py-5 space-y-4">
-            <div>
-              <label className="label">Дансны нэр</label>
-              <input
-                autoFocus
-                type="text"
-                value={form.name}
-                onChange={e => { setForm(f => ({ ...f, name: e.target.value })); setError(''); }}
-                placeholder="Live, Demo, Prop..."
-                className="input"
-              />
-            </div>
-            <div>
-              <label className="label">Эхлэх баланс ($)</label>
-              <input
-                type="number"
-                value={form.balance}
-                onChange={e => { setForm(f => ({ ...f, balance: e.target.value })); setError(''); }}
-                placeholder="10000"
-                className="input"
-              />
-            </div>
-            <div>
-              <label className="label">Зорилго ($)</label>
-              <input
-                type="number"
-                value={form.goal}
-                onChange={e => { setForm(f => ({ ...f, goal: e.target.value })); setError(''); }}
-                placeholder="15000"
-                onKeyDown={e => e.key === 'Enter' && handleSave()}
-                className="input"
-              />
-            </div>
-            {error && <p className="text-red text-xs">{error}</p>}
-          </div>
-
-          {/* Footer */}
+          <div className="px-6 py-5 space-y-4">{children}</div>
           <div className="flex gap-3 px-6 py-4 border-t border-border">
-            <button onClick={onClose} className="btn-ghost flex-1 justify-center">
-              Цуцлах
-            </button>
-            <button onClick={handleSave} className="btn-primary flex-1 justify-center">
-              Нэмэх
-            </button>
+            <button onClick={onClose} className="btn-ghost flex-1 justify-center">Цуцлах</button>
+            <button onClick={onSave}  className="btn-primary flex-1 justify-center">{saveLabel}</button>
           </div>
         </div>
       </div>
@@ -99,139 +42,392 @@ function AddAccountModal({ onClose, onSave, existing }: {
   );
 }
 
+function AddPairModal({ onClose, onSave, existing }: {
+  onClose: () => void; onSave: (p: string) => void; existing: string[];
+}) {
+  const [input, setInput] = useState('');
+  const [error, setError] = useState('');
+  const handleSave = () => {
+    const val = input.trim().toUpperCase();
+    if (!val) return setError('Pair оруулна уу');
+    if (existing.includes(val)) return setError('Аль хэдийн байна');
+    onSave(val); onClose();
+  };
+  return (
+    <Modal title="Pair нэмэх" onClose={onClose} onSave={handleSave}>
+      <div>
+        <label className="label">Symbol</label>
+        <input autoFocus type="text" value={input}
+          onChange={e => { setInput(e.target.value.toUpperCase()); setError(''); }}
+          onKeyDown={e => e.key === 'Enter' && handleSave()}
+          placeholder="XAUUSD, BTCUSD, NAS100..."
+          className="input font-mono tracking-widest" />
+      </div>
+      {error && <p className="text-red text-xs">{error}</p>}
+    </Modal>
+  );
+}
+
+function AddAccountModal({ onClose, onSave, existing }: {
+  onClose: () => void; onSave: (a: TradingAccount) => void; existing: string[];
+}) {
+  const [form, setForm] = useState({ name: '', balance: '', goal: '' });
+  const [error, setError] = useState('');
+  const handleSave = () => {
+    const name    = form.name.trim();
+    const balance = parseFloat(form.balance);
+    const goal    = parseFloat(form.goal);
+    if (!name)                          return setError('Нэр оруулна уу');
+    if (existing.includes(name))        return setError('Аль хэдийн байна');
+    if (isNaN(balance) || balance <= 0) return setError('Эхлэх баланс оруулна уу');
+    if (isNaN(goal)    || goal    <= 0) return setError('Зорилго оруулна уу');
+    if (goal <= balance)                return setError('Зорилго нь эхлэх балансаас их байх ёстой');
+    onSave({ name, balance, goal }); onClose();
+  };
+  return (
+    <Modal title="Данс нэмэх" onClose={onClose} onSave={handleSave}>
+      <div>
+        <label className="label">Дансны нэр</label>
+        <input autoFocus type="text" value={form.name}
+          onChange={e => { setForm(f => ({ ...f, name: e.target.value })); setError(''); }}
+          placeholder="Live, Demo, Prop Firm..." className="input" />
+      </div>
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <label className="label">Эхлэх баланс ($)</label>
+          <input type="number" value={form.balance}
+            onChange={e => { setForm(f => ({ ...f, balance: e.target.value })); setError(''); }}
+            placeholder="10000" className="input" />
+        </div>
+        <div>
+          <label className="label">Зорилго ($)</label>
+          <input type="number" value={form.goal}
+            onChange={e => { setForm(f => ({ ...f, goal: e.target.value })); setError(''); }}
+            placeholder="15000" onKeyDown={e => e.key === 'Enter' && handleSave()} className="input" />
+        </div>
+      </div>
+      {error && <p className="text-red text-xs">{error}</p>}
+    </Modal>
+  );
+}
+
+// ── Main page ─────────────────────────────────────────────────────────────────
+
 export default function ProfilePage({ user, userSettings, trades, onUpdateSettings }: ProfilePageProps) {
   const accounts = userSettings?.accounts ?? [];
-  const [showModal, setShowModal] = useState(false);
+  const pairs    = userSettings?.pairs ?? DEFAULT_PAIRS;
 
-  const handleSave = (acc: TradingAccount) => {
-    onUpdateSettings({ accounts: [...accounts, acc] });
+  const [showAddAccount, setShowAddAccount] = useState(false);
+  const [showAddPair,    setShowAddPair]    = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [saving,  setSaving]  = useState(false);
+
+  const [editName,   setEditName]   = useState('');
+  const [editBio,    setEditBio]    = useState('');
+  const [editAvatar, setEditAvatar] = useState('');
+  const avatarRef = useRef<HTMLInputElement>(null);
+
+  const displayName   = userSettings?.displayName || user.displayName || '—';
+  const displayAvatar = userSettings?.avatarBase64 || user.photoURL;
+  const displayBio    = userSettings?.bio;
+
+  const startEdit = () => {
+    setEditName(userSettings?.displayName || user.displayName || '');
+    setEditBio(userSettings?.bio || '');
+    setEditAvatar(userSettings?.avatarBase64 || user.photoURL || '');
+    setEditing(true);
   };
 
-  const removeAccount = (name: string) => {
-    if (!confirm(`"${name}" дансыг устгах уу?`)) return;
-    onUpdateSettings({ accounts: accounts.filter(a => a.name !== name) });
+  const handleAvatarFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = ev => setEditAvatar(ev.target?.result as string);
+    reader.readAsDataURL(file);
+    e.target.value = '';
   };
+
+  const handleSaveProfile = async () => {
+    setSaving(true);
+    try {
+      const name = editName.trim() || user.displayName || '';
+      await updateProfile(auth.currentUser!, { displayName: name });
+      onUpdateSettings({ displayName: name, bio: editBio, avatarBase64: editAvatar });
+      setEditing(false);
+    } catch (err) { console.error(err); }
+    setSaving(false);
+  };
+
+  const totalTrades = trades.length;
+  const totalWins   = trades.filter(t => t.result === 'Win').length;
+  const totalPnl    = trades.reduce((s, t) => s + (t.pnl || 0), 0);
+  const overallWR   = totalTrades ? ((totalWins / totalTrades) * 100).toFixed(1) : '0';
+
+  const Avatar = ({ src, name, size }: { src?: string | null; name: string; size: string }) =>
+    src ? (
+      <img src={src} className={`${size} rounded-2xl object-cover ring-4 ring-card shadow-2xl`} alt="avatar" />
+    ) : (
+      <div className={`${size} rounded-2xl bg-gradient-to-br from-accent/30 to-purple/20 flex items-center justify-center text-accent font-bold ring-4 ring-card shadow-2xl`}
+        style={{ fontSize: parseInt(size.replace(/\D/g, '')) * 0.35 }}>
+        {name[0]?.toUpperCase() ?? '?'}
+      </div>
+    );
 
   return (
-    <div className="p-6 max-w-2xl space-y-6">
-      {showModal && (
-        <AddAccountModal
-          onClose={() => setShowModal(false)}
-          onSave={handleSave}
-          existing={accounts.map(a => a.name)}
-        />
+    <>
+      {showAddAccount && (
+        <AddAccountModal onClose={() => setShowAddAccount(false)}
+          onSave={acc => onUpdateSettings({ accounts: [...accounts, acc] })}
+          existing={accounts.map(a => a.name)} />
+      )}
+      {showAddPair && (
+        <AddPairModal onClose={() => setShowAddPair(false)}
+          onSave={p => onUpdateSettings({ pairs: [...pairs, p] })}
+          existing={pairs} />
       )}
 
-      <h1 className="text-white text-xl font-semibold">Profile</h1>
+      <div className="p-6 max-w-2xl mx-auto space-y-5 fade-in">
 
-      {/* User info */}
-      <div className="card p-5 flex items-center gap-4">
-        {user.photoURL ? (
-          <img src={user.photoURL} className="w-14 h-14 rounded-full" alt="avatar" />
-        ) : (
-          <div className="w-14 h-14 rounded-full bg-accent/20 flex items-center justify-center text-accent text-xl font-bold">
-            {user.displayName?.[0] ?? user.email?.[0] ?? '?'}
+        {/* ── Profile card ── */}
+        <div className="card overflow-hidden">
+          {/* Banner */}
+          <div className="h-28 relative" style={{
+            background: 'linear-gradient(135deg, rgba(0,229,255,0.15) 0%, rgba(168,85,247,0.12) 50%, rgba(0,229,255,0.06) 100%)'
+          }}>
+            <div className="absolute inset-0 opacity-20"
+              style={{ backgroundImage: 'radial-gradient(circle at 20% 50%, #00e5ff 0%, transparent 50%), radial-gradient(circle at 80% 50%, #a855f7 0%, transparent 50%)' }} />
+            {!editing && (
+              <button onClick={startEdit}
+                className="absolute top-3 right-3 btn-icon backdrop-blur-sm"
+                style={{ background: 'rgba(0,0,0,0.4)', border: '1px solid rgba(255,255,255,0.1)' }}>
+                <Pencil size={13} />
+              </button>
+            )}
           </div>
-        )}
-        <div>
-          <p className="text-white font-medium">{user.displayName || '—'}</p>
-          <p className="text-muted text-sm">{user.email}</p>
-        </div>
-      </div>
 
-      {/* Accounts section */}
-      <div className="space-y-3">
-        <div className="flex items-center justify-between">
-          <h2 className="text-white font-medium">Арилжааны Данснууд</h2>
-          <button
-            onClick={() => setShowModal(true)}
-            className="btn-primary"
-          >
-            <Plus size={14} /> Данс нэмэх
-          </button>
-        </div>
-
-        {accounts.length === 0 && (
-          <div className="card p-8 text-center text-muted text-sm">
-            Данс байхгүй байна
-          </div>
-        )}
-
-        {accounts.map(acc => {
-          const accTrades = trades.filter(t => t.account === acc.name);
-          const totalPnl  = accTrades.reduce((s, t) => s + (t.pnl || 0), 0);
-          const current   = acc.balance + totalPnl;
-          const wins      = accTrades.filter(t => t.result === 'Win').length;
-          const wr        = accTrades.length ? ((wins / accTrades.length) * 100).toFixed(1) : null;
-          const progress  = acc.goal > acc.balance
-            ? Math.min(Math.max(((current - acc.balance) / (acc.goal - acc.balance)) * 100, 0), 100)
-            : 0;
-          const isUp = totalPnl >= 0;
-
-          return (
-            <div key={acc.name} className="card p-5 group">
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 rounded-full bg-accent" />
-                  <span className="text-white font-semibold">{acc.name}</span>
-                  <span className="text-xs text-muted">{accTrades.length} trade</span>
-                </div>
-                <button
-                  onClick={() => removeAccount(acc.name)}
-                  className="text-border2 hover:text-red transition-colors opacity-0 group-hover:opacity-100"
-                >
-                  <Trash2 size={14} />
-                </button>
-              </div>
-
-              <div className="grid grid-cols-3 gap-3 mb-4">
-                <div className="bg-bg3 rounded-xl px-3 py-2.5">
-                  <div className="text-xs text-muted mb-1">Win Rate</div>
-                  <div className={`text-lg font-bold font-mono ${wr === null ? 'text-muted' : parseFloat(wr) >= 50 ? 'text-green' : 'text-red'}`}>
-                    {wr !== null ? `${wr}%` : '—'}
+          <div className="px-6 pb-6">
+            {editing ? (
+              /* ── Edit mode ── */
+              <div className="space-y-5 pt-4">
+                <div className="flex items-center gap-5">
+                  <div className="relative -mt-14 shrink-0">
+                    <Avatar src={editAvatar} name={editName || displayName} size="w-20 h-20" />
+                    <button onClick={() => avatarRef.current?.click()}
+                      className="absolute inset-0 rounded-2xl bg-black/60 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
+                      <Camera size={18} className="text-white" />
+                    </button>
+                    <input ref={avatarRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarFile} />
+                  </div>
+                  <div className="flex-1 mt-2">
+                    <label className="label">Нэр</label>
+                    <input autoFocus type="text" value={editName}
+                      onChange={e => setEditName(e.target.value)}
+                      placeholder="Нэрээ оруулна уу" className="input" />
                   </div>
                 </div>
-                <div className="bg-bg3 rounded-xl px-3 py-2.5">
-                  <div className="text-xs text-muted mb-1">Balance</div>
-                  <div className={`text-lg font-bold font-mono ${isUp ? 'text-green' : 'text-red'}`}>
-                    ${current.toLocaleString()}
-                  </div>
-                  {accTrades.length > 0 && (
-                    <div className="text-xs text-muted font-mono">
-                      {isUp ? '+' : ''}${totalPnl.toFixed(0)}
-                    </div>
-                  )}
+                <div>
+                  <label className="label">Ишлэл / Bio</label>
+                  <textarea value={editBio} rows={3}
+                    onChange={e => setEditBio(e.target.value.slice(0, 160))}
+                    placeholder="Арилжааны тухай философи, зарчим, эсвэл мотивац..."
+                    className="input resize-none" />
+                  <p className="text-right text-[11px] text-muted mt-1">{editBio.length} / 160</p>
                 </div>
-                <div className="bg-bg3 rounded-xl px-3 py-2.5">
-                  <div className="flex items-center gap-1 text-xs text-muted mb-1">
-                    <Target size={10} /> Goal
-                  </div>
-                  <div className="text-lg font-bold font-mono text-yellow">
-                    ${acc.goal.toLocaleString()}
-                  </div>
+                <div className="flex gap-3 pt-1">
+                  <button onClick={() => setEditing(false)} className="btn-ghost">Цуцлах</button>
+                  <button onClick={handleSaveProfile} disabled={saving} className="btn-primary">
+                    {saving
+                      ? <><span className="w-3.5 h-3.5 border border-black border-t-transparent rounded-full animate-spin inline-block" /> Хадгалж байна...</>
+                      : <><Check size={14} /> Хадгалах</>}
+                  </button>
                 </div>
               </div>
-
+            ) : (
+              /* ── View mode ── */
               <div>
-                <div className="flex justify-between text-xs text-muted mb-1.5">
-                  <span>${acc.balance.toLocaleString()}</span>
-                  <span className="text-yellow font-medium">{progress.toFixed(0)}%</span>
-                  <span>${acc.goal.toLocaleString()}</span>
+                <div className="flex items-end gap-4 -mt-12 mb-4">
+                  <Avatar src={displayAvatar} name={displayName} size="w-20 h-20" />
+                  <div className="pb-1 flex-1 min-w-0">
+                    <p className="text-white text-xl font-bold truncate">{displayName}</p>
+                    <p className="text-muted text-sm truncate">{user.email}</p>
+                  </div>
                 </div>
-                <div className="h-2 bg-bg3 rounded-full overflow-hidden">
-                  <div
-                    className="h-full rounded-full transition-all duration-500"
-                    style={{
-                      width: `${progress}%`,
-                      background: progress >= 100 ? '#22c55e' : 'linear-gradient(90deg, #06b6d4, #22c55e)',
-                    }}
-                  />
+
+                {displayBio ? (
+                  <div className="flex items-start gap-2.5 bg-bg3 border border-border rounded-xl px-4 py-3 mb-5">
+                    <Quote size={14} className="text-accent shrink-0 mt-0.5" />
+                    <p className="text-zinc-300 text-sm leading-relaxed italic">{displayBio}</p>
+                  </div>
+                ) : (
+                  <button onClick={startEdit} className="mb-5 text-muted text-sm italic hover:text-zinc-400 transition-colors">
+                    + Ишлэл нэмэх...
+                  </button>
+                )}
+
+                {/* Stats row */}
+                <div className="grid grid-cols-3 divide-x divide-border border border-border rounded-xl overflow-hidden">
+                  {[
+                    { icon: BarChart2, label: 'Нийт арилжаа', val: String(totalTrades), color: '#00e5ff' },
+                    { icon: Target,    label: 'Win Rate',      val: overallWR + '%',     color: '#22c55e' },
+                    { icon: Wallet,    label: 'Нийт P&L',
+                      val: (totalPnl >= 0 ? '+$' : '-$') + Math.abs(totalPnl).toLocaleString('en', { maximumFractionDigits: 0 }),
+                      color: totalPnl >= 0 ? '#22c55e' : '#ef4444' },
+                  ].map(({ icon: Icon, label, val, color }) => (
+                    <div key={label} className="bg-bg3 px-4 py-3 text-center">
+                      <Icon size={13} className="mx-auto mb-1.5" style={{ color }} />
+                      <div className="text-lg font-bold font-mono leading-none" style={{ color }}>{val}</div>
+                      <div className="text-[11px] text-muted mt-1">{label}</div>
+                    </div>
+                  ))}
                 </div>
               </div>
+            )}
+          </div>
+        </div>
+
+        {/* ── Pairs ── */}
+        <div className="card p-5 space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-white font-semibold">Арилжааны Pair</h2>
+              <p className="text-muted text-xs mt-0.5">Trade бүртгэхэд харагдах</p>
             </div>
-          );
-        })}
+            <button onClick={() => setShowAddPair(true)} className="btn-primary text-xs px-3 py-1.5">
+              <Plus size={13} /> Нэмэх
+            </button>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {pairs.map(p => (
+              <span key={p}
+                className="group flex items-center gap-1.5 border border-border2 text-xs font-mono font-semibold px-3 py-1.5 rounded-lg transition-colors hover:border-accent/40"
+                style={{ background: 'rgba(0,229,255,0.05)', color: '#a1a1aa' }}>
+                <span className="text-accent/80">{p}</span>
+                <button onClick={() => onUpdateSettings({ pairs: pairs.filter(x => x !== p) })}
+                  className="text-muted hover:text-red transition-colors opacity-50 group-hover:opacity-100 ml-0.5">
+                  <X size={10} />
+                </button>
+              </span>
+            ))}
+            {pairs.length === 0 && (
+              <span className="text-muted text-sm">Pair байхгүй байна</span>
+            )}
+          </div>
+        </div>
+
+        {/* ── Accounts ── */}
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-white font-semibold">Арилжааны Данснууд</h2>
+              <p className="text-muted text-xs mt-0.5">{accounts.length ? `${accounts.length} данс` : 'Данс байхгүй'}</p>
+            </div>
+            <button onClick={() => setShowAddAccount(true)} className="btn-primary text-xs px-3 py-1.5">
+              <Plus size={13} /> Данс нэмэх
+            </button>
+          </div>
+
+          {accounts.length === 0 && (
+            <div className="card p-10 text-center space-y-3">
+              <div className="w-12 h-12 rounded-2xl bg-bg3 flex items-center justify-center mx-auto">
+                <Wallet size={20} className="text-muted" />
+              </div>
+              <p className="text-muted text-sm">Данс байхгүй байна</p>
+              <button onClick={() => setShowAddAccount(true)} className="btn-primary mx-auto">
+                <Plus size={14} /> Данс нэмэх
+              </button>
+            </div>
+          )}
+
+          {accounts.map(acc => {
+            const accTrades = trades.filter(t => t.account === acc.name);
+            const pnl       = accTrades.reduce((s, t) => s + (t.pnl || 0), 0);
+            const current   = acc.balance + pnl;
+            const wins      = accTrades.filter(t => t.result === 'Win').length;
+            const wr        = accTrades.length ? (wins / accTrades.length) * 100 : null;
+            const progress  = acc.goal > acc.balance
+              ? Math.min(Math.max(((current - acc.balance) / (acc.goal - acc.balance)) * 100, 0), 100)
+              : 0;
+            const isUp = pnl >= 0;
+
+            return (
+              <div key={acc.name} className="card overflow-hidden group">
+                {/* Color top bar */}
+                <div className="h-1" style={{ background: isUp ? 'linear-gradient(90deg,#22c55e,#00e5ff)' : 'linear-gradient(90deg,#ef4444,#f97316)' }} />
+
+                <div className="p-5">
+                  {/* Header */}
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
+                        style={{ background: isUp ? 'rgba(34,197,94,0.12)' : 'rgba(239,68,68,0.12)' }}>
+                        {isUp ? <TrendingUp size={16} className="text-green" /> : <TrendingDown size={16} className="text-red" />}
+                      </div>
+                      <div>
+                        <p className="text-white font-semibold leading-tight">{acc.name}</p>
+                        <p className="text-muted text-xs">{accTrades.length} trade</p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => { if (confirm(`"${acc.name}" дансыг устгах уу?`)) onUpdateSettings({ accounts: accounts.filter(a => a.name !== acc.name) }); }}
+                      className="text-border2 hover:text-red transition-colors opacity-0 group-hover:opacity-100 p-1.5">
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
+
+                  {/* Stats grid */}
+                  <div className="grid grid-cols-3 gap-3 mb-4">
+                    <div className="bg-bg3 rounded-xl p-3">
+                      <p className="text-[11px] text-muted uppercase tracking-wider mb-2">Win Rate</p>
+                      <p className={`text-xl font-bold font-mono ${wr === null ? 'text-muted' : wr >= 50 ? 'text-green' : 'text-red'}`}>
+                        {wr !== null ? wr.toFixed(1) + '%' : '—'}
+                      </p>
+                      <p className="text-[11px] text-muted mt-1">{wins}W · {accTrades.length - wins}L</p>
+                    </div>
+                    <div className="bg-bg3 rounded-xl p-3">
+                      <p className="text-[11px] text-muted uppercase tracking-wider mb-2">Balance</p>
+                      <p className={`text-xl font-bold font-mono ${isUp ? 'text-green' : 'text-red'}`}>
+                        ${current.toLocaleString('en', { maximumFractionDigits: 0 })}
+                      </p>
+                      <p className={`text-[11px] font-mono mt-1 ${isUp ? 'text-green' : 'text-red'}`}>
+                        {isUp ? '+' : ''}${pnl.toFixed(0)}
+                      </p>
+                    </div>
+                    <div className="bg-bg3 rounded-xl p-3">
+                      <p className="text-[11px] text-muted uppercase tracking-wider mb-2 flex items-center gap-1"><Target size={9} /> Goal</p>
+                      <p className="text-xl font-bold font-mono text-yellow">
+                        ${acc.goal.toLocaleString('en', { maximumFractionDigits: 0 })}
+                      </p>
+                      <p className="text-[11px] text-muted mt-1">эхлэл ${acc.balance.toLocaleString('en', { maximumFractionDigits: 0 })}</p>
+                    </div>
+                  </div>
+
+                  {/* Progress */}
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-xs text-muted">Зорилгын явц</span>
+                      <span className="text-xs font-mono font-semibold"
+                        style={{ color: progress >= 100 ? '#22c55e' : progress > 50 ? '#eab308' : '#00e5ff' }}>
+                        {progress.toFixed(1)}%
+                      </span>
+                    </div>
+                    <div className="h-2 bg-bg3 rounded-full overflow-hidden">
+                      <div className="h-full rounded-full transition-all duration-700"
+                        style={{
+                          width: `${progress}%`,
+                          background: progress >= 100 ? '#22c55e' : 'linear-gradient(90deg, #00e5ff, #22c55e)',
+                        }} />
+                    </div>
+                    <div className="flex justify-between text-[11px] text-muted mt-1.5">
+                      <span>${acc.balance.toLocaleString()}</span>
+                      <span>${acc.goal.toLocaleString()}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
       </div>
-    </div>
+    </>
   );
 }
