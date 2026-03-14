@@ -1,236 +1,644 @@
 // src/components/TradeModal.tsx
-import React, { useState, useRef, useEffect } from 'react'
-import { X, Upload } from 'lucide-react'
-import type { Trade } from '../types'
-import clsx from 'clsx'
+import { useState, useRef, useEffect } from 'react';
+import { X, Upload, ChevronDown, TrendingUp, TrendingDown } from 'lucide-react';
+import { Trade, UserSettings } from '../types';
 
-const PAIRS      = ['XAUUSD','EURUSD','GBPUSD','USDJPY','USDCHF','AUDUSD','NZDUSD','GBPJPY','EURJPY','USDCAD','US30','NAS100','GER40']
-const SESSIONS   = ['Asian','London','New York'] as const
-const EMOTIONS   = ['😎 Calm','😐 Neutral','🔥 Confident','😰 Fearful','😤 Frustrated','🤑 Greedy','😩 Tired']
-const STRATEGIES = ['SMC','ICT','Supply & Demand','Breakout','Trend Follow','Scalp','Other']
+type FormData = Omit<Trade, 'id' | 'userId' | 'createdAt' | 'updatedAt'>;
 
-type FormData = Omit<Trade,'id'|'userId'|'createdAt'|'screenshotBase64'|'screenshotBefore'|'screenshotAfter'>
-
-interface Props {
-  open: boolean
-  accountId: string
-  editing?: Trade | null
-  onClose: () => void
-  onSave: (d: FormData, before?: File, after?: File) => Promise<void>
-  onUpdate?: (id: string, d: FormData, before?: File, after?: File, keepBefore?: boolean, keepAfter?: boolean) => Promise<void>
+interface TradeModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onSave: (trade: Omit<Trade, 'id' | 'userId' | 'createdAt' | 'updatedAt'>) => void;
+  editTrade?: Trade | null;
+  userSettings?: UserSettings;
 }
 
-const blank = (aid: string): FormData => ({
-  accountId: aid,
-  date: new Date().toISOString().split('T')[0],
-  session: 'London', pair: 'XAUUSD', direction: 'Buy',
-  lot: '', risk: '', rr: 2, result: 'Win', pl: 0,
-  strategy: 'SMC', emotion: '😎 Calm', notes: '',
-})
+const DEFAULT_PAIRS = ['XAUUSD', 'EURUSD', 'GBPUSD', 'USDJPY', 'NASDAQ'];
 
-interface ImgSlot { file: File | null; preview: string | null }
+const SESSIONS = ['Asia', 'London', 'New York', 'London Close'] as const;
+const PSYCHOLOGY = ['Хэвийн','Шунах','Айх','Яарах','Өшөө авах','Эргэлзэх','Хэт итгэх','Уурлах'] as const;
+const RR_RATIOS = ['1:1','1:2','1:3','1:4','1:5','1:6','1:7','1:8','1:9','1:10'] as const;
+const CONFIDENCE = ['Бага','Дунд','Өндөр'] as const;
 
-export default function TradeModal({ open, accountId, editing, onClose, onSave, onUpdate }: Props) {
-  const [form,   setForm]   = useState<FormData>(blank(accountId))
-  const [before, setBefore] = useState<ImgSlot>({ file: null, preview: null })
-  const [after,  setAfter]  = useState<ImgSlot>({ file: null, preview: null })
-  const [saving, setSaving] = useState(false)
-  const beforeRef = useRef<HTMLInputElement>(null)
-  const afterRef  = useRef<HTMLInputElement>(null)
+type Step = 'entry' | 'exit';
+
+export default function TradeModal({ isOpen, onClose, onSave, editTrade, userSettings }: TradeModalProps) {
+  const pairs = userSettings?.pairs?.length ? userSettings.pairs : DEFAULT_PAIRS;
+
+  const emptyEntry = {
+    date: new Date().toISOString().slice(0, 10),
+    account: userSettings?.accounts?.[0]?.name || '',
+    pair: pairs[0],
+    direction: 'buy' as const,
+    lotSize: 0.01,
+    session: 'London' as const,
+    psychology: 'Хэвийн' as const,
+    planExecution: 'Планатай' as const,
+    confidence: 'Дунд' as const,
+    riskPercent: 1,
+    rrRatio: '1:2' as const,
+    setup: '',
+    entryDetails: '',
+    screenshotBefore: [] as string[],
+    screenshotAfter: [] as string[],
+    result: 'Win' as const,
+    gainRR: 0,
+    gainPercent: 0,
+    closedBy: 'TP' as const,
+    pnl: 0,
+    review: '',
+  };
+
+  const [step, setStep] = useState<Step>('entry');
+  const [form, setForm] = useState<FormData>({ ...emptyEntry });
+  const beforeRef = useRef<HTMLInputElement>(null);
+  const afterRef = useRef<HTMLInputElement>(null);
+  const [lightbox, setLightbox] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!open) return
-    if (editing) {
+    if (!isOpen) return;
+    if (editTrade) {
       setForm({
-        accountId: editing.accountId,
-        date: editing.date, session: editing.session,
-        pair: editing.pair, direction: editing.direction,
-        lot: editing.lot, risk: editing.risk, rr: editing.rr,
-        result: editing.result, pl: editing.pl,
-        strategy: editing.strategy, emotion: editing.emotion,
-        notes: editing.notes,
-      })
-      setBefore({ file: null, preview: editing.screenshotBefore || editing.screenshotBase64 || null })
-      setAfter({  file: null, preview: editing.screenshotAfter  || null })
+        date: editTrade.date,
+        account: editTrade.account,
+        pair: editTrade.pair,
+        direction: editTrade.direction,
+        lotSize: editTrade.lotSize,
+        session: editTrade.session,
+        psychology: editTrade.psychology,
+        planExecution: editTrade.planExecution,
+        confidence: editTrade.confidence,
+        riskPercent: editTrade.riskPercent,
+        rrRatio: editTrade.rrRatio,
+        setup: editTrade.setup,
+        entryDetails: editTrade.entryDetails,
+        screenshotBefore: editTrade.screenshotBefore || [],
+        screenshotAfter: editTrade.screenshotAfter || [],
+        result: editTrade.result,
+        gainRR: editTrade.gainRR,
+        gainPercent: editTrade.gainPercent,
+        closedBy: editTrade.closedBy,
+        pnl: editTrade.pnl,
+        review: editTrade.review,
+      });
+      setStep('entry');
     } else {
-      setForm(blank(accountId))
-      setBefore({ file: null, preview: null })
-      setAfter({  file: null, preview: null })
+      setForm({ ...emptyEntry });
+      setStep('entry');
     }
-  }, [open, editing, accountId])
+  }, [isOpen, editTrade]);
 
-  if (!open) return null
+  // Auto-compute Profit/Loss/Breakeven label from pnl
+  const pnlLabel = form.pnl > 0 ? 'Profit' : form.pnl < 0 ? 'Loss' : 'Breakeven';
+  const pnlColor = form.pnl > 0 ? 'text-emerald-400' : form.pnl < 0 ? 'text-red-400' : 'text-yellow-400';
 
-  const s = (k: keyof FormData, v: any) => setForm(f => ({ ...f, [k]: v }))
+  const set = <K extends keyof typeof form>(key: K, value: typeof form[K]) =>
+    setForm(prev => ({ ...prev, [key]: value }));
 
-  const loadImg = (file: File, setter: (s: ImgSlot) => void) => {
-    if (!file.type.startsWith('image/')) return
-    const r = new FileReader()
-    r.onload = e => setter({ file, preview: e.target?.result as string })
-    r.readAsDataURL(file)
-  }
+  const handleImageUpload = (
+    e: React.ChangeEvent<HTMLInputElement>,
+    field: 'screenshotBefore' | 'screenshotAfter'
+  ) => {
+    const files = Array.from(e.target.files || []);
+    const current = form[field];
+    if (current.length >= 2) return;
+    const remaining = 2 - current.length;
+    files.slice(0, remaining).forEach(file => {
+      const reader = new FileReader();
+      reader.onload = ev => {
+        const result = ev.target?.result as string;
+        setForm(prev => ({ ...prev, [field]: [...prev[field], result] }));
+      };
+      reader.readAsDataURL(file);
+    });
+    e.target.value = '';
+  };
 
-  const save = async () => {
-    setSaving(true)
-    try {
-      if (editing && onUpdate) {
-        await onUpdate(
-          editing.id, form,
-          before.file || undefined,
-          after.file  || undefined,
-          !before.file && !!before.preview,
-          !after.file  && !!after.preview,
-        )
-      } else {
-        await onSave(form, before.file || undefined, after.file || undefined)
-      }
-      onClose()
-    } finally { setSaving(false) }
-  }
+  const removeImage = (field: 'screenshotBefore' | 'screenshotAfter', idx: number) => {
+    setForm(prev => ({ ...prev, [field]: prev[field].filter((_, i) => i !== idx) }));
+  };
 
-  const segBtn = (label: string, active: boolean, color: string, onClick: () => void) => (
-    <button onClick={onClick}
-      className="flex-1 py-2 rounded-lg text-sm font-medium transition-all border"
-      style={active
-        ? { background: color + '18', borderColor: color, color }
-        : { background: '#141519', borderColor: '#242529', color: '#52525b' }}>
-      {label}
-    </button>
-  )
+  const handleSubmit = () => {
+    onSave(form);
+    onClose();
+  };
 
-  const ImgSlotUI = ({
-    label, slot, setSlot, inputRef, color
-  }: {
-    label: string
-    slot: ImgSlot
-    setSlot: (s: ImgSlot) => void
-    inputRef: React.RefObject<HTMLInputElement>
-    color: string
-  }) => (
-    <div className="flex-1">
-      <div className="flex items-center justify-between mb-1.5">
-        <span className="text-[11px] font-semibold uppercase tracking-wider" style={{ color }}>{label}</span>
-        {slot.preview && (
-          <button onClick={() => setSlot({ file: null, preview: null })}
-            className="text-[10px] text-muted hover:text-red transition-colors">✕ Remove</button>
-        )}
-      </div>
-      <div
-        onClick={() => inputRef.current?.click()}
-        onDrop={e => { e.preventDefault(); const f = e.dataTransfer.files[0]; if (f) loadImg(f, setSlot) }}
-        onDragOver={e => e.preventDefault()}
-        className="rounded-xl cursor-pointer transition-all border-2 border-dashed"
-        style={{
-          borderColor: slot.preview ? color + '40' : '#242529',
-          background: '#0d0e11',
-          minHeight: '96px',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          padding: slot.preview ? '6px' : '20px',
-        }}>
-        {slot.preview
-          ? <img src={slot.preview} alt={label} className="w-full rounded-lg max-h-36 object-contain"/>
-          : <div className="flex flex-col items-center gap-2 text-center pointer-events-none">
-              <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: color + '15' }}>
-                <Upload size={15} style={{ color }}/>
-              </div>
-              <div className="text-xs text-muted">{label} chart</div>
-              <div className="text-[10px] text-zinc-600">Click or drag & drop</div>
-            </div>
-        }
-      </div>
-      <input ref={inputRef} type="file" accept="image/*" className="hidden"
-        onChange={e => { if (e.target.files?.[0]) loadImg(e.target.files[0], setSlot); e.currentTarget.value = '' }}/>
-    </div>
-  )
+  if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/75 z-[500] flex items-center justify-center backdrop-blur-sm p-4 overflow-y-auto" onClick={onClose}>
-      <div className="card w-full max-w-[600px] my-auto fade-in" onClick={e => e.stopPropagation()}>
-
-        <div className="flex justify-between items-center px-6 py-4 border-b border-border">
-          <h2 className="font-semibold text-zinc-100">{editing ? 'Edit Trade' : 'Log Trade'}</h2>
-          <button onClick={onClose} className="btn-icon"><X size={14}/></button>
+    <>
+      {/* Lightbox */}
+      {lightbox && (
+        <div
+          className="fixed inset-0 z-[60] bg-black/90 flex items-center justify-center p-4"
+          onClick={() => setLightbox(null)}
+        >
+          <img src={lightbox} className="max-w-full max-h-full rounded-lg" alt="preview" />
         </div>
+      )}
 
-        <div className="px-6 py-5 space-y-4">
+      {/* Backdrop */}
+      <div className="fixed inset-0 z-40 bg-black/70 backdrop-blur-sm" onClick={onClose} />
 
-          <div className="grid grid-cols-2 gap-3">
-            <div><label className="label">Date</label><input type="date" value={form.date} onChange={e=>s('date',e.target.value)} className="input"/></div>
-            <div><label className="label">Session</label>
-              <select value={form.session} onChange={e=>s('session',e.target.value as any)} className="input">
-                {SESSIONS.map(x => <option key={x}>{x}</option>)}
-              </select>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <div><label className="label">Pair</label>
-              <select value={form.pair} onChange={e=>s('pair',e.target.value)} className="input">
-                {PAIRS.map(p => <option key={p}>{p}</option>)}
-              </select>
-            </div>
-            <div><label className="label">Direction</label>
-              <div className="flex gap-2">
-                {segBtn('Buy',  form.direction==='Buy',  '#00e5ff', ()=>s('direction','Buy'))}
-                {segBtn('Sell', form.direction==='Sell', '#ef4444', ()=>s('direction','Sell'))}
+      {/* Modal */}
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div className="bg-gray-900 border border-gray-700 rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col shadow-2xl">
+          
+          {/* Header */}
+          <div className="flex items-center justify-between px-6 py-4 border-b border-gray-800">
+            <div className="flex items-center gap-3">
+              <h2 className="text-white font-semibold text-lg">
+                {editTrade ? 'Trade засах' : 'Trade бүртгэх'}
+              </h2>
+              {/* Step tabs */}
+              <div className="flex bg-gray-800 rounded-lg p-1 gap-1">
+                <button
+                  onClick={() => setStep('entry')}
+                  className={`px-3 py-1 rounded-md text-xs font-medium transition-all ${
+                    step === 'entry'
+                      ? 'bg-cyan-500 text-black'
+                      : 'text-gray-400 hover:text-white'
+                  }`}
+                >
+                  Entry
+                </button>
+                <button
+                  onClick={() => setStep('exit')}
+                  className={`px-3 py-1 rounded-md text-xs font-medium transition-all ${
+                    step === 'exit'
+                      ? 'bg-purple-500 text-white'
+                      : 'text-gray-400 hover:text-white'
+                  }`}
+                >
+                  Exit
+                </button>
               </div>
             </div>
+            <button onClick={onClose} className="text-gray-400 hover:text-white transition-colors">
+              <X size={20} />
+            </button>
           </div>
 
-          <div className="grid grid-cols-3 gap-3">
-            <div><label className="label">Lot Size</label><input type="number" step="0.01" value={form.lot} onChange={e=>s('lot',e.target.value)} className="input" placeholder="0.01"/></div>
-            <div><label className="label">Risk %</label><input type="number" step="0.1" value={form.risk} onChange={e=>s('risk',e.target.value)} className="input" placeholder="1.0"/></div>
-            <div><label className="label">R:R Ratio</label><input type="number" step="0.1" value={form.rr} onChange={e=>s('rr',parseFloat(e.target.value)||0)} className="input" placeholder="2.0"/></div>
+          {/* Body */}
+          <div className="overflow-y-auto flex-1 px-6 py-5 space-y-5">
+
+            {/* ── ENTRY STEP ── */}
+            {step === 'entry' && (
+              <>
+                {/* Row: Date + Account */}
+                <div className="grid grid-cols-2 gap-4">
+                  <Field label="Date">
+                    <input
+                      type="date"
+                      value={form.date}
+                      onChange={e => set('date', e.target.value)}
+                      className={inputCls}
+                    />
+                  </Field>
+                  <Field label="Account">
+                    {userSettings?.accounts?.length ? (
+                      <Select
+                        value={form.account}
+                        onChange={v => set('account', v)}
+                        options={userSettings.accounts.map(a => a.name)}
+                      />
+                    ) : (
+                      <input
+                        type="text"
+                        value={form.account}
+                        onChange={e => set('account', e.target.value)}
+                        placeholder="Account нэр"
+                        className={inputCls}
+                      />
+                    )}
+                  </Field>
+                </div>
+
+                {/* Pairs */}
+                <Field label="Pair">
+                  <div className="flex flex-wrap gap-2">
+                    {pairs.map(p => (
+                      <button
+                        key={p}
+                        onClick={() => set('pair', p)}
+                        className={`px-3 py-1.5 rounded-lg text-sm font-mono font-medium transition-all border ${
+                          form.pair === p
+                            ? 'bg-cyan-500 border-cyan-500 text-black'
+                            : 'bg-gray-800 border-gray-700 text-gray-300 hover:border-gray-500'
+                        }`}
+                      >
+                        {p}
+                      </button>
+                    ))}
+                  </div>
+                </Field>
+
+                {/* Direction */}
+                <Field label="Direction">
+                  <div className="flex gap-3">
+                    <button
+                      onClick={() => set('direction', 'buy')}
+                      className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl border font-semibold text-sm transition-all ${
+                        form.direction === 'buy'
+                          ? 'bg-emerald-500/20 border-emerald-500 text-emerald-400'
+                          : 'bg-gray-800 border-gray-700 text-gray-400 hover:border-gray-500'
+                      }`}
+                    >
+                      <TrendingUp size={16} /> BUY
+                    </button>
+                    <button
+                      onClick={() => set('direction', 'sell')}
+                      className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl border font-semibold text-sm transition-all ${
+                        form.direction === 'sell'
+                          ? 'bg-red-500/20 border-red-500 text-red-400'
+                          : 'bg-gray-800 border-gray-700 text-gray-400 hover:border-gray-500'
+                      }`}
+                    >
+                      <TrendingDown size={16} /> SELL
+                    </button>
+                  </div>
+                </Field>
+
+                {/* Lot Size + Risk % */}
+                <div className="grid grid-cols-2 gap-4">
+                  <Field label="Lot Size">
+                    <input
+                      type="number"
+                      step="0.01"
+                      min="0.01"
+                      value={form.lotSize}
+                      onChange={e => set('lotSize', parseFloat(e.target.value) || 0.01)}
+                      className={inputCls}
+                    />
+                  </Field>
+                  <Field label="Risk %">
+                    <input
+                      type="number"
+                      step="0.1"
+                      min="0"
+                      value={form.riskPercent}
+                      onChange={e => set('riskPercent', parseFloat(e.target.value) || 0)}
+                      className={inputCls}
+                    />
+                  </Field>
+                </div>
+
+                {/* Session */}
+                <Field label="Session">
+                  <div className="flex flex-wrap gap-2">
+                    {SESSIONS.map(s => (
+                      <button
+                        key={s}
+                        onClick={() => set('session', s as typeof form.session)}
+                        className={`px-3 py-1.5 rounded-lg text-sm transition-all border ${
+                          form.session === s
+                            ? 'bg-blue-500/20 border-blue-500 text-blue-300'
+                            : 'bg-gray-800 border-gray-700 text-gray-400 hover:border-gray-500'
+                        }`}
+                      >
+                        {s}
+                      </button>
+                    ))}
+                  </div>
+                </Field>
+
+                {/* R:R */}
+                <Field label="Risk : Reward">
+                  <div className="flex flex-wrap gap-2">
+                    {RR_RATIOS.map(r => (
+                      <button
+                        key={r}
+                        onClick={() => set('rrRatio', r as typeof form.rrRatio)}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-mono transition-all border ${
+                          form.rrRatio === r
+                            ? 'bg-yellow-500/20 border-yellow-500 text-yellow-300'
+                            : 'bg-gray-800 border-gray-700 text-gray-400 hover:border-gray-500'
+                        }`}
+                      >
+                        {r}
+                      </button>
+                    ))}
+                  </div>
+                </Field>
+
+                {/* Psychology + Plan Execution */}
+                <div className="grid grid-cols-2 gap-4">
+                  <Field label="Psychology">
+                    <Select
+                      value={form.psychology}
+                      onChange={v => set('psychology', v as typeof form.psychology)}
+                      options={[...PSYCHOLOGY]}
+                    />
+                  </Field>
+                  <Field label="Plan Execution">
+                    <div className="flex gap-2">
+                      {(['Планатай','Плангүй'] as const).map(p => (
+                        <button
+                          key={p}
+                          onClick={() => set('planExecution', p)}
+                          className={`flex-1 py-2 rounded-lg text-sm border transition-all ${
+                            form.planExecution === p
+                              ? 'bg-indigo-500/20 border-indigo-500 text-indigo-300'
+                              : 'bg-gray-800 border-gray-700 text-gray-400'
+                          }`}
+                        >
+                          {p}
+                        </button>
+                      ))}
+                    </div>
+                  </Field>
+                </div>
+
+                {/* Confidence */}
+                <Field label="Confidence">
+                  <div className="flex gap-2">
+                    {CONFIDENCE.map(c => (
+                      <button
+                        key={c}
+                        onClick={() => set('confidence', c as typeof form.confidence)}
+                        className={`flex-1 py-2 rounded-lg text-sm border transition-all ${
+                          form.confidence === c
+                            ? 'bg-orange-500/20 border-orange-500 text-orange-300'
+                            : 'bg-gray-800 border-gray-700 text-gray-400'
+                        }`}
+                      >
+                        {c}
+                      </button>
+                    ))}
+                  </div>
+                </Field>
+
+                {/* Setup */}
+                <Field label="Setup">
+                  <input
+                    type="text"
+                    value={form.setup}
+                    onChange={e => set('setup', e.target.value)}
+                    placeholder="Жишээ: BOS + OB retest"
+                    className={inputCls}
+                  />
+                </Field>
+
+                {/* Entry Details */}
+                <Field label="Entry Details">
+                  <textarea
+                    value={form.entryDetails}
+                    onChange={e => set('entryDetails', e.target.value)}
+                    placeholder="Аriljaand orson nöхцлöö tайлбарла..."
+                    rows={3}
+                    className={`${inputCls} resize-none`}
+                  />
+                </Field>
+
+                {/* Before Screenshots */}
+                <Field label="Before (2 зураг)">
+                  <ImageUploader
+                    images={form.screenshotBefore}
+                    onUpload={e => handleImageUpload(e, 'screenshotBefore')}
+                    onRemove={idx => removeImage('screenshotBefore', idx)}
+                    onLightbox={setLightbox}
+                    inputRef={beforeRef}
+                    accentColor="cyan"
+                  />
+                </Field>
+              </>
+            )}
+
+            {/* ── EXIT STEP ── */}
+            {step === 'exit' && (
+              <>
+                {/* Result */}
+                <Field label="Үр дүн">
+                  <div className="flex gap-3">
+                    {(['Win','Loss','Breakeven'] as const).map(r => (
+                      <button
+                        key={r}
+                        onClick={() => set('result', r)}
+                        className={`flex-1 py-2.5 rounded-xl border font-semibold text-sm transition-all ${
+                          form.result === r
+                            ? r === 'Win'
+                              ? 'bg-emerald-500/20 border-emerald-500 text-emerald-400'
+                              : r === 'Loss'
+                              ? 'bg-red-500/20 border-red-500 text-red-400'
+                              : 'bg-yellow-500/20 border-yellow-500 text-yellow-400'
+                            : 'bg-gray-800 border-gray-700 text-gray-400'
+                        }`}
+                      >
+                        {r}
+                      </button>
+                    ))}
+                  </div>
+                </Field>
+
+                {/* Closed By */}
+                <Field label="Closed By">
+                  <div className="flex gap-3">
+                    {(['TP','SL','BE'] as const).map(c => (
+                      <button
+                        key={c}
+                        onClick={() => set('closedBy', c)}
+                        className={`flex-1 py-2 rounded-lg border text-sm font-mono font-semibold transition-all ${
+                          form.closedBy === c
+                            ? 'bg-purple-500/20 border-purple-500 text-purple-300'
+                            : 'bg-gray-800 border-gray-700 text-gray-400'
+                        }`}
+                      >
+                        {c}
+                      </button>
+                    ))}
+                  </div>
+                </Field>
+
+                {/* Gain R:R + Gain % */}
+                <div className="grid grid-cols-2 gap-4">
+                  <Field label="Gain R:R">
+                    <input
+                      type="number"
+                      step="0.1"
+                      value={form.gainRR}
+                      onChange={e => set('gainRR', parseFloat(e.target.value) || 0)}
+                      className={inputCls}
+                    />
+                  </Field>
+                  <Field label="Gain %">
+                    <input
+                      type="number"
+                      step="0.01"
+                      value={form.gainPercent}
+                      onChange={e => set('gainPercent', parseFloat(e.target.value) || 0)}
+                      className={inputCls}
+                    />
+                  </Field>
+                </div>
+
+                {/* PNL */}
+                <Field label="PNL">
+                  <div className="relative">
+                    <input
+                      type="number"
+                      step="0.01"
+                      value={form.pnl}
+                      onChange={e => set('pnl', parseFloat(e.target.value) || 0)}
+                      className={`${inputCls} pr-24`}
+                    />
+                    <span className={`absolute right-3 top-1/2 -translate-y-1/2 text-sm font-semibold ${pnlColor}`}>
+                      {pnlLabel}
+                    </span>
+                  </div>
+                </Field>
+
+                {/* After Screenshots */}
+                <Field label="After (2 зураг)">
+                  <ImageUploader
+                    images={form.screenshotAfter}
+                    onUpload={e => handleImageUpload(e, 'screenshotAfter')}
+                    onRemove={idx => removeImage('screenshotAfter', idx)}
+                    onLightbox={setLightbox}
+                    inputRef={afterRef}
+                    accentColor="purple"
+                  />
+                </Field>
+
+                {/* Review */}
+                <Field label="Review / Дүгнэлт">
+                  <textarea
+                    value={form.review}
+                    onChange={e => set('review', e.target.value)}
+                    placeholder="Энэ арилжаанаас юу сурав? Дараагийн удаа юуг өөрчлөх вэ?"
+                    rows={4}
+                    className={`${inputCls} resize-none`}
+                  />
+                </Field>
+              </>
+            )}
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <div><label className="label">Result</label>
-              <div className="flex gap-1.5">
-                {segBtn('Win',  form.result==='Win',  '#22c55e', ()=>s('result','Win'))}
-                {segBtn('Loss', form.result==='Loss', '#ef4444', ()=>s('result','Loss'))}
-                {segBtn('BE',   form.result==='BE',   '#eab308', ()=>s('result','BE'))}
-              </div>
-            </div>
-            <div><label className="label">P&L ($)</label><input type="number" step="0.01" value={form.pl} onChange={e=>s('pl',parseFloat(e.target.value)||0)} className="input" placeholder="0.00"/></div>
+          {/* Footer */}
+          <div className="px-6 py-4 border-t border-gray-800 flex items-center justify-between gap-3">
+            {step === 'entry' ? (
+              <>
+                <button onClick={onClose} className={btnSecondary}>Цуцлах</button>
+                <button onClick={() => setStep('exit')} className={btnPrimary('cyan')}>
+                  Exit →
+                </button>
+              </>
+            ) : (
+              <>
+                <button onClick={() => setStep('entry')} className={btnSecondary}>← Entry</button>
+                <button onClick={handleSubmit} className={btnPrimary('purple')}>
+                  {editTrade ? 'Хадгалах' : 'Бүртгэх'}
+                </button>
+              </>
+            )}
           </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <div><label className="label">Strategy</label>
-              <select value={form.strategy} onChange={e=>s('strategy',e.target.value)} className="input">
-                {STRATEGIES.map(x => <option key={x}>{x}</option>)}
-              </select>
-            </div>
-            <div><label className="label">Psychology</label>
-              <select value={form.emotion} onChange={e=>s('emotion',e.target.value)} className="input">
-                {EMOTIONS.map(x => <option key={x}>{x}</option>)}
-              </select>
-            </div>
-          </div>
-
-          {/* Before / After */}
-          <div>
-            <label className="label mb-2">Screenshots</label>
-            <div className="flex gap-3">
-              <ImgSlotUI label="Before" slot={before} setSlot={setBefore} inputRef={beforeRef} color="#00e5ff"/>
-              <ImgSlotUI label="After"  slot={after}  setSlot={setAfter}  inputRef={afterRef}  color="#a855f7"/>
-            </div>
-          </div>
-
-          <div>
-            <label className="label">Notes</label>
-            <textarea value={form.notes} onChange={e=>s('notes',e.target.value)} className="input resize-none min-h-[72px]" placeholder="Entry reason, mistakes, key lessons…"/>
-          </div>
-
-        </div>
-
-        <div className="flex gap-2 px-6 py-4 border-t border-border">
-          <div className="flex-1"/>
-          <button onClick={onClose} className="btn-ghost">Cancel</button>
-          <button onClick={save} disabled={saving} className="btn-primary">
-            {saving ? 'Saving…' : editing ? 'Update Trade' : 'Save Trade'}
-          </button>
         </div>
       </div>
+    </>
+  );
+}
+
+// ── Sub-components ──
+
+const inputCls =
+  'w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-gray-500 transition-colors placeholder-gray-500';
+
+const btnSecondary =
+  'px-4 py-2 rounded-xl border border-gray-700 text-gray-300 text-sm hover:bg-gray-800 transition-all';
+
+const btnPrimary = (color: 'cyan' | 'purple') =>
+  color === 'cyan'
+    ? 'px-6 py-2 rounded-xl bg-cyan-500 text-black font-semibold text-sm hover:bg-cyan-400 transition-all'
+    : 'px-6 py-2 rounded-xl bg-purple-500 text-white font-semibold text-sm hover:bg-purple-400 transition-all';
+
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="space-y-1.5">
+      <label className="text-xs font-medium text-gray-400 uppercase tracking-wider">{label}</label>
+      {children}
     </div>
-  )
+  );
+}
+
+function Select({
+  value,
+  onChange,
+  options,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  options: string[];
+}) {
+  return (
+    <div className="relative">
+      <select
+        value={value}
+        onChange={e => onChange(e.target.value)}
+        className={`${inputCls} appearance-none pr-8 cursor-pointer`}
+      >
+        {options.map(o => (
+          <option key={o} value={o} className="bg-gray-900">
+            {o}
+          </option>
+        ))}
+      </select>
+      <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+    </div>
+  );
+}
+
+function ImageUploader({
+  images,
+  onUpload,
+  onRemove,
+  onLightbox,
+  inputRef,
+  accentColor,
+}: {
+  images: string[];
+  onUpload: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  onRemove: (idx: number) => void;
+  onLightbox: (src: string) => void;
+  inputRef: React.RefObject<HTMLInputElement>;
+  accentColor: 'cyan' | 'purple';
+}) {
+  const accent = accentColor === 'cyan' ? 'border-cyan-500/50 hover:border-cyan-400' : 'border-purple-500/50 hover:border-purple-400';
+  const labelAccent = accentColor === 'cyan' ? 'text-cyan-400' : 'text-purple-400';
+
+  return (
+    <div className="flex gap-3">
+      {images.map((img, idx) => (
+        <div key={idx} className="relative group w-24 h-16 rounded-lg overflow-hidden border border-gray-700">
+          <img
+            src={img}
+            alt={`screenshot ${idx + 1}`}
+            className="w-full h-full object-cover cursor-pointer"
+            onClick={() => onLightbox(img)}
+          />
+          <button
+            onClick={() => onRemove(idx)}
+            className="absolute top-1 right-1 bg-black/70 rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity"
+          >
+            <X size={10} className="text-white" />
+          </button>
+        </div>
+      ))}
+      {images.length < 2 && (
+        <button
+          onClick={() => inputRef.current?.click()}
+          className={`w-24 h-16 rounded-lg border-2 border-dashed ${accent} flex flex-col items-center justify-center gap-1 transition-colors`}
+        >
+          <Upload size={14} className={labelAccent} />
+          <span className={`text-xs ${labelAccent}`}>Зураг</span>
+        </button>
+      )}
+      <input
+        ref={inputRef}
+        type="file"
+        accept="image/*"
+        multiple
+        className="hidden"
+        onChange={onUpload}
+      />
+    </div>
+  );
 }

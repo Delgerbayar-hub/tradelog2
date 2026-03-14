@@ -22,25 +22,25 @@ export default function AnalyticsPage({ trades }: Props) {
     if (!trades.length) return null
     const wins   = trades.filter(t => t.result === 'Win')
     const losses = trades.filter(t => t.result === 'Loss')
-    const avgWin  = wins.length   ? wins.reduce((s,t)=>s+t.pl,0)/wins.length   : 0
-    const avgLoss = losses.length ? Math.abs(losses.reduce((s,t)=>s+t.pl,0)/losses.length) : 0
-    const best    = Math.max(...trades.map(t=>t.pl), 0)
-    const worst   = Math.min(...trades.map(t=>t.pl), 0)
+    const avgWin  = wins.length   ? wins.reduce((s,t)=>s+t.pnl,0)/wins.length   : 0
+    const avgLoss = losses.length ? Math.abs(losses.reduce((s,t)=>s+t.pnl,0)/losses.length) : 0
+    const best    = Math.max(...trades.map(t=>t.pnl), 0)
+    const worst   = Math.min(...trades.map(t=>t.pnl), 0)
 
     // Max drawdown
     let peak=0, dd=0, bal=0
     ;[...trades].sort((a,b)=>a.date.localeCompare(b.date)).forEach(t=>{
-      bal+=t.pl; if(bal>peak)peak=bal; dd=Math.max(dd,peak-bal)
+      bal+=t.pnl; if(bal>peak)peak=bal; dd=Math.max(dd,peak-bal)
     })
 
     // Profit factor
-    const gp = wins.reduce((s,t)=>s+t.pl,0)
-    const gl = Math.abs(losses.reduce((s,t)=>s+t.pl,0))
+    const gp = wins.reduce((s,t)=>s+t.pnl,0)
+    const gl = Math.abs(losses.reduce((s,t)=>s+t.pnl,0))
     const pf = gl ? (gp/gl).toFixed(2) : '∞'
 
     // Monthly
     const moMap: Record<string,number> = {}
-    trades.forEach(t => { const k=t.date.slice(0,7); moMap[k]=(moMap[k]||0)+t.pl })
+    trades.forEach(t => { const k=t.date.slice(0,7); moMap[k]=(moMap[k]||0)+t.pnl })
     const monthly = Object.entries(moMap).sort(([a],[b])=>a.localeCompare(b)).map(([m,pl])=>({ m:m.slice(5)+'/'+m.slice(2,4), pl:+pl.toFixed(2) }))
 
     // By pair
@@ -50,7 +50,7 @@ export default function AnalyticsPage({ trades }: Props) {
       if(t.result==='Win') pairMap[t.pair].w++
       else if(t.result==='Loss') pairMap[t.pair].l++
       else pairMap[t.pair].be++
-      pairMap[t.pair].pl+=t.pl
+      pairMap[t.pair].pl+=t.pnl
     })
     const pairs = Object.entries(pairMap)
       .map(([pair,d])=>({ pair, pl:+d.pl.toFixed(2), wr:+((d.w/(d.w+d.l+d.be))*100).toFixed(1), total:d.w+d.l+d.be }))
@@ -59,10 +59,10 @@ export default function AnalyticsPage({ trades }: Props) {
     // By emotion
     const emoMap: Record<string,{w:number;total:number;pl:number}> = {}
     trades.forEach(t => {
-      if(!emoMap[t.emotion]) emoMap[t.emotion]={w:0,total:0,pl:0}
-      emoMap[t.emotion].total++
-      if(t.result==='Win') emoMap[t.emotion].w++
-      emoMap[t.emotion].pl+=t.pl
+      if(!emoMap[t.psychology]) emoMap[t.psychology]={w:0,total:0,pl:0}
+      emoMap[t.psychology].total++
+      if(t.result==='Win') emoMap[t.psychology].w++
+      emoMap[t.psychology].pl+=t.pnl
     })
     const emotions = Object.entries(emoMap)
       .map(([e,d])=>({ e, wr:+((d.w/d.total)*100).toFixed(1), total:d.total, pl:+d.pl.toFixed(2) }))

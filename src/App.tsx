@@ -1,139 +1,130 @@
 // src/App.tsx
-import React, { useState, useEffect } from 'react'
-import { Routes, Route, Navigate } from 'react-router-dom'
-import { useAuth } from './context/AuthContext'
-import { useAccounts, useTrades } from './hooks/useFirestore'
-import Sidebar from './components/Sidebar'
-import AccountModal from './components/AccountModal'
-import TradeModal from './components/TradeModal'
-import LoginPage from './pages/LoginPage'
-import DashboardPage from './pages/DashboardPage'
-import TradesPage from './pages/TradesPage'
-import CalendarPage from './pages/CalendarPage'
-import AnalyticsPage from './pages/AnalyticsPage'
-import type { Account, Trade } from './types'
+import { useState } from 'react';
+import { useAuth } from './context/AuthContext';
+import { useFirestore } from './hooks/useFirestore';
 
-function Spinner() {
-  return (
-    <div className="min-h-screen bg-bg flex items-center justify-center">
-      <div className="flex items-center gap-3">
-        <div style={{background:'rgba(0,229,255,0.1)',border:'1px solid rgba(0,229,255,0.2)'}}
-          className="w-7 h-7 rounded-lg flex items-center justify-center">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#00e5ff" strokeWidth="2.2">
-            <polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/>
-            <polyline points="16 7 22 7 22 13"/>
-          </svg>
-        </div>
-        <span className="font-semibold text-zinc-300 animate-pulse">TradeLog</span>
-      </div>
-    </div>
-  )
-}
+import TradesPage from './pages/TradesPage';
+import DashboardPage from './pages/DashboardPage';
+import ProfilePage from './pages/ProfilePage';
+import LoginPage from './pages/LoginPage';
 
-function Shell() {
-  const { accounts, loading: aL, addAccount, updateAccount, deleteAccount } = useAccounts()
-  const [activeId,   setActiveId]   = useState<string | null>(null)
-  const [accModal,   setAccModal]   = useState<{ open: boolean; editing: Account | null }>({ open: false, editing: null })
-  const [tradeModal, setTradeModal] = useState<{ open: boolean; editing: Trade | null }>({ open: false, editing: null })
-
-  useEffect(() => {
-    if (!aL && accounts.length && !activeId) setActiveId(accounts[0].id)
-  }, [accounts, aL, activeId])
-
-  const { trades, loading: tL, addTrade, updateTrade, deleteTrade } = useTrades(activeId)
-  const activeAccount = accounts.find(a => a.id === activeId) ?? null
-
-  const getBalance = (id: string) => {
-    const acc = accounts.find(a => a.id === id)
-    const pl  = id === activeId ? trades.reduce((s,t) => s + t.pl, 0) : 0
-    return (acc?.initBalance ?? 0) + pl
-  }
-
-  const handleSaveAccount = async (d: { name: string; color: string; initBalance: number; broker: string }) => {
-    if (accModal.editing) await updateAccount(accModal.editing.id, d)
-    else                  await addAccount(d)
-    setAccModal({ open: false, editing: null })
-  }
-
-  const handleDeleteAccount = async () => {
-    if (!accModal.editing) return
-    if (!confirm(`Delete "${accModal.editing.name}"?`)) return
-    const remaining = accounts.filter(a => a.id !== accModal.editing!.id)
-    await deleteAccount(accModal.editing.id)
-    setActiveId(remaining[0]?.id ?? null)
-    setAccModal({ open: false, editing: null })
-  }
-
-  if (aL || tL) return <Spinner/>
-
-  return (
-    <div className="flex min-h-screen">
-      <Sidebar
-        accounts={accounts} activeId={activeId}
-        onSwitch={setActiveId}
-        onAdd={() => setAccModal({ open: true, editing: null })}
-        onEdit={a => setAccModal({ open: true, editing: a })}
-        balance={getBalance}
-      />
-
-      <main className="ml-[214px] flex-1 p-7">
-        {!activeId ? (
-          <div className="flex flex-col items-center justify-center min-h-[65vh] gap-4 text-center">
-            <div className="text-5xl">💼</div>
-            <div className="text-zinc-400 text-sm">No accounts yet</div>
-            <button onClick={() => setAccModal({ open: true, editing: null })} className="btn-primary">
-              Create first account
-            </button>
-          </div>
-        ) : (
-          <Routes>
-            <Route path="/" element={
-              <DashboardPage
-                trades={trades}
-                account={activeAccount}
-                onAdd={() => setTradeModal({ open: true, editing: null })}
-              />
-            }/>
-            <Route path="/trades" element={
-              <TradesPage
-                trades={trades}
-                onAdd={() => setTradeModal({ open: true, editing: null })}
-                onEdit={t => setTradeModal({ open: true, editing: t })}
-                onDelete={deleteTrade}
-                onImport={async (ts) => { for (const t of ts) await addTrade(t) }}
-                accountId={activeId}
-              />
-            }/>
-            <Route path="/calendar"  element={<CalendarPage  trades={trades} onAdd={() => setTradeModal({ open: true, editing: null })}/>}/>
-            <Route path="/analytics" element={<AnalyticsPage trades={trades}/>}/>
-            <Route path="*"          element={<Navigate to="/" replace/>}/>
-          </Routes>
-        )}
-      </main>
-
-      <AccountModal
-        open={accModal.open} editing={accModal.editing}
-        onClose={() => setAccModal({ open: false, editing: null })}
-        onSave={handleSaveAccount}
-        onDelete={accModal.editing ? handleDeleteAccount : undefined}
-      />
-
-      {activeId && (
-        <TradeModal
-          open={tradeModal.open}
-          accountId={activeId}
-          editing={tradeModal.editing}
-          onClose={() => setTradeModal({ open: false, editing: null })}
-          onSave={async (d, before, after) => { await addTrade(d, before, after) }}
-          onUpdate={async (id, d, before, after, keepB, keepA) => { await updateTrade(id, d, before, after, keepB, keepA) }}
-        />
-      )}
-    </div>
-  )
-}
+type Page = 'dashboard' | 'trades' | 'profile';
 
 export default function App() {
-  const { user, loading } = useAuth()
-  if (loading) return <Spinner/>
-  return user ? <Shell/> : <LoginPage/>
+  const { user, loading: loadingAuth, logout } = useAuth();
+  const [page, setPage] = useState<Page>('dashboard');
+  const [openModal, setOpenModal] = useState(false);
+
+  const {
+    trades,
+    loading,
+    userSettings,
+    addTrade,
+    updateTrade,
+    deleteTrade,
+    updateUserSettings,
+  } = useFirestore(user?.uid ?? null);
+
+  if (loadingAuth) {
+    return (
+      <div className="min-h-screen bg-gray-950 flex items-center justify-center">
+        <div className="w-6 h-6 border-2 border-cyan-500 border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  if (!user) {
+    return <LoginPage />;
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-950 flex">
+      {/* Sidebar */}
+      <aside className="w-56 bg-gray-900 border-r border-gray-800 flex flex-col py-6 px-4 fixed h-full z-10">
+        {/* Logo */}
+        <div className="mb-8 px-2">
+          <span className="text-white font-bold text-lg tracking-tight">Trade</span>
+          <span className="text-cyan-400 font-bold text-lg">Log</span>
+        </div>
+
+        {/* Nav */}
+        <nav className="flex flex-col gap-1 flex-1">
+          {([
+            { id: 'dashboard', label: 'Dashboard', icon: '▦' },
+            { id: 'trades',    label: 'Trades',    icon: '≡' },
+          ] as { id: Page; label: string; icon: string }[]).map(item => (
+            <button
+              key={item.id}
+              onClick={() => setPage(item.id)}
+              className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all text-left ${
+                page === item.id
+                  ? 'bg-cyan-500/10 text-cyan-400 border border-cyan-500/20'
+                  : 'text-gray-400 hover:text-white hover:bg-gray-800'
+              }`}
+            >
+              <span className="text-base">{item.icon}</span>
+              {item.label}
+            </button>
+          ))}
+        </nav>
+
+        {/* User + Profile + Logout */}
+        <div className="border-t border-gray-800 pt-4 space-y-1">
+          <button
+            onClick={() => setPage('profile')}
+            className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl transition-all ${
+              page === 'profile'
+                ? 'bg-cyan-500/10 border border-cyan-500/20'
+                : 'hover:bg-gray-800'
+            }`}
+          >
+            {user.photoURL ? (
+              <img src={user.photoURL} className="w-6 h-6 rounded-full shrink-0" alt="avatar" />
+            ) : (
+              <div className="w-6 h-6 rounded-full bg-cyan-500/20 flex items-center justify-center text-cyan-400 text-xs font-bold shrink-0">
+                {user.displayName?.[0] ?? user.email?.[0] ?? '?'}
+              </div>
+            )}
+            <p className={`text-xs truncate ${page === 'profile' ? 'text-cyan-400' : 'text-gray-400'}`}>
+              {user.displayName || user.email}
+            </p>
+          </button>
+          <button
+            onClick={logout}
+            className="w-full text-left px-3 py-2 rounded-xl text-xs text-gray-500 hover:text-red-400 hover:bg-gray-800 transition-all"
+          >
+            Гарах
+          </button>
+        </div>
+      </aside>
+
+      {/* Main */}
+      <main className="flex-1 ml-56 min-h-screen overflow-y-auto">
+        {loading ? (
+          <div className="flex items-center justify-center h-full py-32">
+            <div className="w-6 h-6 border-2 border-cyan-500 border-t-transparent rounded-full animate-spin" />
+          </div>
+        ) : page === 'dashboard' ? (
+          <DashboardPage trades={trades} onAdd={() => { setPage('trades'); setOpenModal(true); }} />
+        ) : page === 'trades' ? (
+          <TradesPage
+            trades={trades}
+            onAdd={addTrade}
+            onUpdate={updateTrade}
+            onDelete={deleteTrade}
+            userSettings={userSettings}
+            openModal={openModal}
+            onModalClose={() => setOpenModal(false)}
+          />
+        ) : (
+          <ProfilePage
+            user={user}
+            userSettings={userSettings}
+            trades={trades}
+            onUpdateSettings={updateUserSettings}
+          />
+        )}
+      </main>
+    </div>
+  );
 }

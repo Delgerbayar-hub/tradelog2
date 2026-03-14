@@ -5,7 +5,7 @@ import { Activity, Target, TrendingUp, TrendingDown, Zap, Flame, Trophy, AlertTr
 import type { Trade, Account } from '../types'
 import clsx from 'clsx'
 
-interface Props { trades: Trade[]; account: Account | null; onAdd: () => void }
+interface Props { trades: Trade[]; account?: Account | null; onAdd?: () => void }
 
 const TT = ({ active, payload, label }: any) => active && payload?.length ? (
   <div className="bg-bg2 border border-border2 rounded-lg px-3 py-2 text-xs shadow-xl">
@@ -19,19 +19,19 @@ export default function DashboardPage({ trades, account, onAdd }: Props) {
     const n = trades.length
     const wins   = trades.filter(t => t.result === 'Win').length
     const losses = trades.filter(t => t.result === 'Loss').length
-    const be     = trades.filter(t => t.result === 'BE').length
-    const pl     = trades.reduce((s,t) => s + t.pl, 0)
+    const be     = trades.filter(t => t.result === 'Breakeven').length
+    const pl     = trades.reduce((s,t) => s + t.pnl, 0)
     const wr     = n ? (wins / n * 100).toFixed(1) : '0'
-    const avgRR  = n ? (trades.reduce((s,t) => s + (t.rr||0), 0) / n).toFixed(2) : '0'
-    const pf     = (() => { const gp = trades.filter(t=>t.pl>0).reduce((s,t)=>s+t.pl,0); const gl = Math.abs(trades.filter(t=>t.pl<0).reduce((s,t)=>s+t.pl,0)); return gl ? (gp/gl).toFixed(2) : '∞' })()
-    const sorted = [...trades].sort((a,b) => a.date.localeCompare(b.date) || a.createdAt - b.createdAt)
+    const avgRR  = n ? (trades.reduce((s,t) => s + (t.gainRR||0), 0) / n).toFixed(2) : '0'
+    const pf     = (() => { const gp = trades.filter(t=>t.pnl>0).reduce((s,t)=>s+t.pnl,0); const gl = Math.abs(trades.filter(t=>t.pnl<0).reduce((s,t)=>s+t.pnl,0)); return gl ? (gp/gl).toFixed(2) : '∞' })()
+    const sorted = [...trades].sort((a,b) => a.date.localeCompare(b.date) || a.createdAt.getTime() - b.createdAt.getTime())
     let streak = 0
     for (let i = sorted.length - 1; i >= 0; i--) {
       if (sorted[i].result === 'Win') streak++
       else break
     }
-    const best  = trades.reduce((b,t) => t.pl > b.pl ? t : b, trades[0] || null)
-    const worst = trades.reduce((w,t) => t.pl < w.pl ? t : w, trades[0] || null)
+    const best  = trades.reduce((b,t) => t.pnl > b.pnl ? t : b, trades[0] || null)
+    const worst = trades.reduce((w,t) => t.pnl < w.pnl ? t : w, trades[0] || null)
     return { n, wins, losses, be, pl, wr, avgRR, pf, streak, best, worst }
   }, [trades])
 
@@ -39,7 +39,7 @@ export default function DashboardPage({ trades, account, onAdd }: Props) {
     const init = account?.initBalance ?? 10000
     let bal = init
     const pts = [{ x: 'Start', v: init }]
-    ;[...trades].sort((a,b)=>a.date.localeCompare(b.date)).forEach(t => { bal += t.pl; pts.push({ x: t.date.slice(5), v: +bal.toFixed(2) }) })
+    ;[...trades].sort((a,b)=>a.date.localeCompare(b.date)).forEach(t => { bal += t.pnl; pts.push({ x: t.date.slice(5), v: +bal.toFixed(2) }) })
     return pts
   }, [trades, account])
 
@@ -48,7 +48,7 @@ export default function DashboardPage({ trades, account, onAdd }: Props) {
     let bal  = peak
     const pts: { x: string; dd: number }[] = [{ x: 'Start', dd: 0 }]
     ;[...trades].sort((a,b)=>a.date.localeCompare(b.date)).forEach(t => {
-      bal += t.pl
+      bal += t.pnl
       if (bal > peak) peak = bal
       pts.push({ x: t.date.slice(5), dd: +((peak - bal)).toFixed(2) })
     })
@@ -65,7 +65,7 @@ export default function DashboardPage({ trades, account, onAdd }: Props) {
         dt.setDate(today.getDate() - w * 7 - (6 - d))
         const ds = dt.toISOString().split('T')[0]
         const dayTrades = trades.filter(t => t.date === ds)
-        const pl = dayTrades.reduce((s,t) => s + t.pl, 0)
+        const pl = dayTrades.reduce((s,t) => s + t.pnl, 0)
         days.push({ date: ds, pl: +pl.toFixed(2), has: dayTrades.length > 0 })
       }
       weeks.push({ week: `W${12-w}`, days })
@@ -76,7 +76,7 @@ export default function DashboardPage({ trades, account, onAdd }: Props) {
   const sessions = useMemo(() =>
     ['Asian','London','New York'].map(s => ({
       name: s, count: trades.filter(t=>t.session===s).length,
-      pl: trades.filter(t=>t.session===s).reduce((s,t)=>s+t.pl,0),
+      pl: trades.filter(t=>t.session===s).reduce((s,t)=>s+t.pnl,0),
     }))
   , [trades])
 
@@ -133,7 +133,7 @@ export default function DashboardPage({ trades, account, onAdd }: Props) {
           </div>
           <div>
             <div className="text-[10px] font-semibold text-muted uppercase tracking-wider">Best Trade</div>
-            <div className="text-2xl font-bold text-green">{st.best ? `+$${st.best.pl.toFixed(2)}` : '—'}</div>
+            <div className="text-2xl font-bold text-green">{st.best ? `+$${st.best.pnl.toFixed(2)}` : '—'}</div>
             {st.best && <div className="text-[10px] text-muted font-mono">{st.best.pair} · {st.best.date}</div>}
           </div>
         </div>
@@ -143,7 +143,7 @@ export default function DashboardPage({ trades, account, onAdd }: Props) {
           </div>
           <div>
             <div className="text-[10px] font-semibold text-muted uppercase tracking-wider">Worst Trade</div>
-            <div className="text-2xl font-bold text-red">{st.worst ? `$${st.worst.pl.toFixed(2)}` : '—'}</div>
+            <div className="text-2xl font-bold text-red">{st.worst ? `$${st.worst.pnl.toFixed(2)}` : '—'}</div>
             {st.worst && <div className="text-[10px] text-muted font-mono">{st.worst.pair} · {st.worst.date}</div>}
           </div>
         </div>

@@ -1,78 +1,123 @@
 // src/hooks/useFirestore.ts
-import { useState, useEffect } from 'react'
-import { collection, query, where, orderBy, onSnapshot, addDoc, updateDoc, deleteDoc, doc } from 'firebase/firestore'
-import { db } from '../lib/firebase'
-import { useAuth } from '../context/AuthContext'
-import type { Account, Trade } from '../types'
+import { useState, useEffect } from 'react';
+import {
+  collection,
+  addDoc,
+  updateDoc,
+  setDoc,
+  deleteDoc,
+  doc,
+  query,
+  where,
+  orderBy,
+  onSnapshot,
+  serverTimestamp,
+  Timestamp,
+} from 'firebase/firestore';
+import { db } from '../lib/firebase';
+import { Trade, UserSettings } from '../types';
 
-function b64(file: File): Promise<string> {
-  return new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result as string); r.onerror = rej; r.readAsDataURL(file) })
-}
+export function useFirestore(userId: string | null) {
+  const [trades, setTrades] = useState<Trade[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [userSettings, setUserSettings] = useState<UserSettings | null>(null);
 
-export function useAccounts() {
-  const { user } = useAuth()
-  const [accounts, setAccounts] = useState<Account[]>([])
-  const [loading, setLoading] = useState(true)
-
+  // ── Real-time trades listener ──
   useEffect(() => {
-    if (!user) { setAccounts([]); setLoading(false); return }
-    return onSnapshot(query(collection(db,'accounts'), where('userId','==',user.uid), orderBy('createdAt','asc')), snap => {
-      setAccounts(snap.docs.map(d => ({ id: d.id, ...d.data() } as Account))); setLoading(false)
-    })
-  }, [user])
+    if (!userId) {
+      setTrades([]);
+      setLoading(false);
+      return;
+    }
 
-  const addAccount    = async (d: Omit<Account,'id'|'userId'|'createdAt'>) => { if (!user) return; await addDoc(collection(db,'accounts'), { ...d, userId: user.uid, createdAt: Date.now() }) }
-  const updateAccount = (id: string, d: Partial<Account>) => updateDoc(doc(db,'accounts',id), d as any)
-  const deleteAccount = (id: string) => deleteDoc(doc(db,'accounts',id))
+    const q = query(
+      collection(db, 'trades'),
+      where('userId', '==', userId),
+      orderBy('createdAt', 'desc')
+    );
 
-  return { accounts, loading, addAccount, updateAccount, deleteAccount }
-}
+    const unsub = onSnapshot(q, snapshot => {
+      const data: Trade[] = snapshot.docs.map(d => {
+        const raw = d.data();
+        return {
+          ...raw,
+          id: d.id,
+          createdAt: raw.createdAt instanceof Timestamp ? raw.createdAt.toDate() : new Date(),
+          updatedAt: raw.updatedAt instanceof Timestamp ? raw.updatedAt.toDate() : new Date(),
+          screenshotBefore: raw.screenshotBefore || [],
+          screenshotAfter: raw.screenshotAfter || [],
+        } as Trade;
+      });
+      setTrades(data);
+      setLoading(false);
+    });
 
-export function useTrades(accountId: string | null) {
-  const { user } = useAuth()
-  const [trades, setTrades] = useState<Trade[]>([])
-  const [loading, setLoading] = useState(true)
+    return () => unsub();
+  }, [userId]);
 
+  // ── User settings listener ──
   useEffect(() => {
-    if (!user || !accountId) { setTrades([]); setLoading(false); return }
-    return onSnapshot(
-      query(collection(db,'trades'), where('userId','==',user.uid), where('accountId','==',accountId), orderBy('date','asc'), orderBy('createdAt','asc')),
-      snap => { setTrades(snap.docs.map(d => ({ id: d.id, ...d.data() } as Trade))); setLoading(false) }
-    )
-  }, [user, accountId])
+    if (!userId) return;
 
+    const unsub = onSnapshot(doc(db, 'userSettings', userId), snapshot => {
+      if (snapshot.exists()) {
+        setUserSettings(snapshot.data() as UserSettings);
+      } else {
+        // Default settings
+        setUserSettings({
+          userId,
+          pairs: ['XAUUSD', 'EURUSD', 'GBPUSD', 'USDJPY', 'NASDAQ'],
+          accounts: [],
+        });
+      }
+    });
+
+    return () => unsub();
+  }, [userId]);
+
+  // ── Add trade ──
   const addTrade = async (
-    data: Omit<Trade,'id'|'userId'|'createdAt'|'screenshotBase64'|'screenshotBefore'|'screenshotAfter'>,
-    before?: File, after?: File
+    tradeData: Omit<Trade, 'id' | 'userId' | 'createdAt' | 'updatedAt'>
   ) => {
-    if (!user) return
-    const screenshotBefore = before ? await b64(before) : null
-    const screenshotAfter  = after  ? await b64(after)  : null
-    await addDoc(collection(db,'trades'), {
-      ...data,
-      screenshotBefore,
-      screenshotAfter,
-      screenshotBase64: screenshotBefore,
-      userId: user.uid,
-      createdAt: Date.now()
-    })
-  }
+    if (!userId) return;
+    await addDoc(collection(db, 'trades'), {
+      ...tradeData,
+      userId,
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    });
+  };
 
+  // ── Update trade ──
   const updateTrade = async (
-    id: string,
-    data: Omit<Trade,'id'|'userId'|'createdAt'|'screenshotBase64'|'screenshotBefore'|'screenshotAfter'>,
-    before?: File, after?: File,
-    keepBefore?: boolean, keepAfter?: boolean
+    tradeId: string,
+    tradeData: Partial<Omit<Trade, 'id' | 'userId' | 'createdAt'>>
   ) => {
-    const update: any = { ...data }
-    update.screenshotBefore = before ? await b64(before) : keepBefore ? undefined : null
-    update.screenshotAfter  = after  ? await b64(after)  : keepAfter  ? undefined : null
-    if (before) update.screenshotBase64 = update.screenshotBefore
-    Object.keys(update).forEach(k => update[k] === undefined && delete update[k])
-    await updateDoc(doc(db,'trades',id), update)
-  }
+    await updateDoc(doc(db, 'trades', tradeId), {
+      ...tradeData,
+      updatedAt: serverTimestamp(),
+    });
+  };
 
-  const deleteTrade = (id: string) => deleteDoc(doc(db,'trades',id))
+  // ── Delete trade ──
+  const deleteTrade = async (tradeId: string) => {
+    await deleteDoc(doc(db, 'trades', tradeId));
+  };
 
-  return { trades, loading, addTrade, updateTrade, deleteTrade }
+  // ── Update user settings (pairs, accounts) ──
+  const updateUserSettings = async (settings: Partial<UserSettings>) => {
+    if (!userId) return;
+    const ref = doc(db, 'userSettings', userId);
+    await setDoc(ref, { ...settings, userId }, { merge: true });
+  };
+
+  return {
+    trades,
+    loading,
+    userSettings,
+    addTrade,
+    updateTrade,
+    deleteTrade,
+    updateUserSettings,
+  };
 }

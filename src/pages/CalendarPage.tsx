@@ -23,10 +23,10 @@ export default function CalendarPage({ trades, onAdd }: Props) {
 
   const prefix   = `${yr}-${String(mo + 1).padStart(2,'0')}`
   const mTrades  = trades.filter(t => t.date.startsWith(prefix))
-  const mPL      = mTrades.reduce((s,t) => s + t.pl, 0)
+  const mPL      = mTrades.reduce((s,t) => s + t.pnl, 0)
   const mDays    = [...new Set(mTrades.map(t => t.date))]
-  const winDays  = mDays.filter(d => (dayMap[d]||[]).reduce((s,t) => s+t.pl,0) > 0).length
-  const lossDays = mDays.filter(d => (dayMap[d]||[]).reduce((s,t) => s+t.pl,0) < 0).length
+  const winDays  = mDays.filter(d => (dayMap[d]||[]).reduce((s,t) => s+t.pnl,0) > 0).length
+  const lossDays = mDays.filter(d => (dayMap[d]||[]).reduce((s,t) => s+t.pnl,0) < 0).length
 
   const nav = (dir: number) => {
     let m = mo + dir, y = yr
@@ -101,7 +101,7 @@ export default function CalendarPage({ trades, onAdd }: Props) {
             )
 
             const dt  = dayMap[c.date] || []
-            const pl  = dt.reduce((s,t) => s + t.pl, 0)
+            const pl  = dt.reduce((s,t) => s + t.pnl, 0)
             const isT = c.date === today
 
             return (
@@ -120,7 +120,7 @@ export default function CalendarPage({ trades, onAdd }: Props) {
                 {dt.slice(0, 2).map((t, j) => (
                   <div key={j} className={clsx('text-[9px] font-mono px-1 py-0.5 rounded mb-0.5 truncate',
                     t.result==='Win'?'bg-green/10 text-green':t.result==='Loss'?'bg-red/10 text-red':'bg-yellow/10 text-yellow')}>
-                    {t.pair} {t.pl>=0?'+':''}${t.pl.toFixed(0)}
+                    {t.pair} {t.pnl>=0?'+':''}${t.pnl.toFixed(0)}
                   </div>
                 ))}
                 {dt.length > 2 && <div className="text-[8.5px] text-muted">+{dt.length - 2} more</div>}
@@ -146,7 +146,7 @@ export default function CalendarPage({ trades, onAdd }: Props) {
             {/* Summary bar */}
             <div className="flex gap-3 pb-3 mb-3 border-b border-border">
               {(() => {
-                const pl  = popup.trades.reduce((s,t) => s+t.pl, 0)
+                const pl  = popup.trades.reduce((s,t) => s+t.pnl, 0)
                 const wr  = ((popup.trades.filter(t=>t.result==='Win').length / popup.trades.length)*100).toFixed(0)
                 return [
                   { l:'P&L',    v:(pl>=0?'+':'')+'$'+pl.toFixed(2), c:pl>=0?'text-green':'text-red' },
@@ -166,16 +166,16 @@ export default function CalendarPage({ trades, onAdd }: Props) {
                 t.result==='Win'?'border-green':t.result==='Loss'?'border-red':'border-yellow')}>
                 <div className="flex justify-between mb-1">
                   <span className="font-semibold text-sm text-zinc-100">{t.pair}</span>
-                  <span className={clsx('font-mono text-sm font-semibold', t.pl>=0?'text-green':'text-red')}>{t.pl>=0?'+':''}${t.pl.toFixed(2)}</span>
+                  <span className={clsx('font-mono text-sm font-semibold', t.pnl>=0?'text-green':'text-red')}>{t.pnl>=0?'+':''}${t.pnl.toFixed(2)}</span>
                 </div>
                 <div className="flex gap-1.5 flex-wrap">
-                  <span className={t.direction==='Buy'?'badge-buy':'badge-sell'}>{t.direction}</span>
-                  <span className={`badge-${t.result.toLowerCase() as 'win'|'loss'|'be'}`}>{t.result}</span>
+                  <span className={t.direction==='buy'?'badge-buy':'badge-sell'}>{t.direction}</span>
+                  <span className={t.result==='Win'?'badge-win':t.result==='Loss'?'badge-loss':'badge-be'}>{t.result}</span>
                   <span className="text-[10px] text-muted self-center">{t.session}</span>
-                  <span className="text-[10px] text-muted self-center">{t.emotion}</span>
+                  <span className="text-[10px] text-muted self-center">{t.psychology}</span>
                 </div>
-                {t.screenshotBase64 && <img src={t.screenshotBase64} className="w-full rounded mt-2 max-h-28 object-cover" alt="chart"/>}
-                {t.notes && <p className="text-[11px] text-muted mt-1.5 leading-relaxed">{t.notes}</p>}
+                {t.screenshotBefore?.[0] && <img src={t.screenshotBefore[0]} className="w-full rounded mt-2 max-h-28 object-cover" alt="chart"/>}
+                {t.review && <p className="text-[11px] text-muted mt-1.5 leading-relaxed">{t.review}</p>}
               </div>
             ))}
           </div>

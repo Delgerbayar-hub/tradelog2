@@ -1,236 +1,299 @@
 // src/pages/TradesPage.tsx
-import React, { useState, useRef } from 'react'
-import { Trash2, ChevronDown, ChevronRight, Download, Upload, Pencil } from 'lucide-react'
-import type { Trade } from '../types'
-import clsx from 'clsx'
+import React, { useState } from 'react';
+import {
+  Plus, Search, Download,
+  ChevronDown, ChevronUp, Pencil, Trash2,
+  TrendingUp, TrendingDown
+} from 'lucide-react';
+import { Trade, UserSettings } from '../types';
+import TradeModal from '../components/TradeModal';
 
-interface Props {
-  trades: Trade[]
-  onAdd: () => void
-  onEdit: (t: Trade) => void
-  onDelete: (id: string) => void
-  onImport?: (trades: Omit<Trade,'id'|'userId'|'createdAt'|'screenshotBase64'|'screenshotBefore'|'screenshotAfter'>[]) => void
-  accountId: string
+interface TradesPageProps {
+  trades: Trade[];
+  onAdd: (t: Omit<Trade, 'id' | 'userId' | 'createdAt' | 'updatedAt'>) => void;
+  onUpdate: (id: string, t: Partial<Trade>) => void;
+  onDelete: (id: string) => void;
+  userSettings: UserSettings | null;
+  openModal?: boolean;
+  onModalClose?: () => void;
 }
 
-const PAIRS    = ['XAUUSD','EURUSD','GBPUSD','USDJPY','USDCHF','AUDUSD','NZDUSD','GBPJPY','EURJPY','USDCAD','US30','NAS100','GER40']
-const SESSIONS = ['Asian','London','New York']
+export default function TradesPage({
+  trades, onAdd, onUpdate, onDelete, userSettings, openModal, onModalClose
+}: TradesPageProps) {
+  const [modalOpen, setModalOpen] = useState(false);
 
-export default function TradesPage({ trades, onAdd, onEdit, onDelete, onImport, accountId }: Props) {
-  const [pair,      setPair]      = useState('')
-  const [session,   setSession]   = useState('')
-  const [result,    setResult]    = useState('')
-  const [expanded,  setExpanded]  = useState<string | null>(null)
-  const [lightbox,  setLightbox]  = useState<string | null>(null)
-  const [importMsg, setImportMsg] = useState('')
-  const fileRef = useRef<HTMLInputElement>(null)
-
-  const filtered = [...trades]
-    .filter(t => (!pair || t.pair === pair) && (!session || t.session === session) && (!result || t.result === result))
-    .reverse()
-
-  const sel = 'bg-bg3 border border-border2 text-zinc-300 px-2.5 py-1.5 rounded-lg text-xs outline-none cursor-pointer'
-
-  const exportCSV = () => {
-    const headers = ['date','session','pair','direction','lot','risk','rr','result','pl','strategy','emotion','notes']
-    const rows = [...trades].sort((a,b)=>a.date.localeCompare(b.date)).map(t =>
-      headers.map(h => {
-        const v = (t as any)[h]
-        return typeof v === 'string' && v.includes(',') ? `"${v}"` : v
-      }).join(',')
-    )
-    const csv = [headers.join(','), ...rows].join('\n')
-    const blob = new Blob([csv], { type: 'text/csv' })
-    const a = document.createElement('a')
-    a.href = URL.createObjectURL(blob)
-    a.download = `trades_${new Date().toISOString().split('T')[0]}.csv`
-    a.click()
-  }
-
-  const handleImportFile = (file: File) => {
-    const reader = new FileReader()
-    reader.onload = e => {
-      try {
-        const text = e.target?.result as string
-        const lines = text.trim().split('\n')
-        const headers = lines[0].split(',').map(h => h.trim().toLowerCase())
-        const parsed: any[] = []
-        for (let i = 1; i < lines.length; i++) {
-          const vals = lines[i].split(',')
-          const row: any = {}
-          headers.forEach((h, idx) => { row[h] = vals[idx]?.replace(/^"|"$/g,'').trim() })
-          if (!row.date || !row.pair) continue
-          parsed.push({
-            accountId,
-            date:      row.date,
-            session:   row.session || 'London',
-            pair:      row.pair,
-            direction: row.direction === 'Sell' ? 'Sell' : 'Buy',
-            lot:       row.lot || '',
-            risk:      row.risk || '',
-            rr:        parseFloat(row.rr) || 2,
-            result:    (['Win','Loss','BE'].includes(row.result) ? row.result : 'Win') as any,
-            pl:        parseFloat(row.pl) || 0,
-            strategy:  row.strategy || 'Other',
-            emotion:   row.emotion || '😐 Neutral',
-            notes:     row.notes || '',
-          })
-        }
-        if (onImport && parsed.length) {
-          onImport(parsed)
-          setImportMsg(`✓ ${parsed.length} trades imported`)
-          setTimeout(() => setImportMsg(''), 3000)
-        } else {
-          setImportMsg('No valid trades found')
-          setTimeout(() => setImportMsg(''), 3000)
-        }
-      } catch {
-        setImportMsg('Failed to parse CSV')
-        setTimeout(() => setImportMsg(''), 3000)
-      }
+  React.useEffect(() => {
+    if (openModal) {
+      setModalOpen(true);
+      onModalClose?.();
     }
-    reader.readAsText(file)
-  }
+  }, [openModal]);
+  const [editTrade, setEditTrade] = useState<Trade | null>(null);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [search, setSearch] = useState('');
+  const [filterResult, setFilterResult] = useState<'All' | 'Win' | 'Loss' | 'Breakeven'>('All');
+  const [lightbox, setLightbox] = useState<string | null>(null);
 
-  const thumb = (t: Trade) => t.screenshotBefore || t.screenshotBase64 || null
+  const filtered = trades.filter(t => {
+    const matchSearch =
+      t.pair.toLowerCase().includes(search.toLowerCase()) ||
+      t.setup?.toLowerCase().includes(search.toLowerCase()) ||
+      t.account?.toLowerCase().includes(search.toLowerCase());
+    const matchResult = filterResult === 'All' || t.result === filterResult;
+    return matchSearch && matchResult;
+  });
+
+  const handleSave = (data: Omit<Trade, 'id' | 'userId' | 'createdAt' | 'updatedAt'>) => {
+    if (editTrade) {
+      onUpdate(editTrade.id, data);
+    } else {
+      onAdd(data);
+    }
+    setEditTrade(null);
+  };
+
+  const handleEdit = (trade: Trade) => {
+    setEditTrade(trade);
+    setModalOpen(true);
+  };
+
+  const handleDelete = (id: string) => {
+    if (confirm('Trade устгах уу?')) onDelete(id);
+  };
+
+  // CSV Export
+  const exportCSV = () => {
+    const headers = [
+      'Date','Account','Pair','Direction','LotSize','Session',
+      'Psychology','PlanExecution','Confidence','RiskPercent',
+      'RRRatio','Setup','EntryDetails','Result','GainRR',
+      'GainPercent','ClosedBy','PNL','Review'
+    ];
+    const rows = trades.map(t => [
+      t.date, t.account, t.pair, t.direction, t.lotSize, t.session,
+      t.psychology, t.planExecution, t.confidence, t.riskPercent,
+      t.rrRatio, `"${t.setup}"`, `"${t.entryDetails}"`, t.result,
+      t.gainRR, t.gainPercent, t.closedBy, t.pnl, `"${t.review}"`
+    ]);
+    const csv = [headers, ...rows].map(r => r.join(',')).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `tradelog_${new Date().toISOString().slice(0,10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
 
   return (
-    <div className="fade-in">
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-xl font-bold text-zinc-100 tracking-tight">Trades</h1>
-          <p className="text-sm text-muted mt-0.5">Full journal log</p>
+    <>
+      {/* Lightbox */}
+      {lightbox && (
+        <div
+          className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4"
+          onClick={() => setLightbox(null)}
+        >
+          <img src={lightbox} className="max-w-full max-h-full rounded-lg" alt="preview" />
         </div>
-        <div className="flex items-center gap-2">
-          {importMsg && <span className="text-xs text-green font-mono">{importMsg}</span>}
-          <button onClick={() => fileRef.current?.click()} className="btn-ghost gap-2 text-xs py-1.5 px-3">
-            <Upload size={13}/> Import CSV
-          </button>
-          <button onClick={exportCSV} disabled={!trades.length} className="btn-ghost gap-2 text-xs py-1.5 px-3">
-            <Download size={13}/> Export CSV
-          </button>
-          <button onClick={onAdd} className="btn-primary">+ Log Trade</button>
-          <input ref={fileRef} type="file" accept=".csv" className="hidden"
-            onChange={e => { if (e.target.files?.[0]) handleImportFile(e.target.files[0]); e.target.value = '' }}/>
-        </div>
-      </div>
+      )}
 
-      <div className="card overflow-hidden">
-        <div className="flex items-center justify-between px-5 py-3 border-b border-border">
-          <span className="text-sm text-zinc-400">
-            <span className="font-semibold text-zinc-200">{filtered.length}</span> trades
-          </span>
-          <div className="flex gap-2">
-            <select value={pair}    onChange={e => setPair(e.target.value)}    className={sel}>
-              <option value="">All Pairs</option>
-              {PAIRS.map(p => <option key={p}>{p}</option>)}
-            </select>
-            <select value={session} onChange={e => setSession(e.target.value)} className={sel}>
-              <option value="">All Sessions</option>
-              {SESSIONS.map(s => <option key={s}>{s}</option>)}
-            </select>
-            <select value={result}  onChange={e => setResult(e.target.value)}  className={sel}>
-              <option value="">All Results</option>
-              {['Win','Loss','BE'].map(r => <option key={r}>{r}</option>)}
-            </select>
+      <TradeModal
+        isOpen={modalOpen}
+        onClose={() => { setModalOpen(false); setEditTrade(null); }}
+        onSave={handleSave}
+        editTrade={editTrade}
+        userSettings={userSettings ?? undefined}
+      />
+
+      <div className="p-6 space-y-5">
+        {/* Top bar */}
+        <div className="flex flex-wrap items-center gap-3 justify-between">
+          <h1 className="text-white text-xl font-semibold">Trades</h1>
+          <div className="flex items-center gap-2 flex-wrap">
+            {/* Search */}
+            <div className="relative">
+              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+              <input
+                type="text"
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                placeholder="Хайх..."
+                className="bg-gray-800 border border-gray-700 rounded-xl pl-8 pr-4 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-gray-500 w-48"
+              />
+            </div>
+
+            {/* Filter */}
+            {(['All','Win','Loss','Breakeven'] as const).map(f => (
+              <button
+                key={f}
+                onClick={() => setFilterResult(f)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-all ${
+                  filterResult === f
+                    ? f === 'Win' ? 'bg-emerald-500/20 border-emerald-500 text-emerald-400'
+                    : f === 'Loss' ? 'bg-red-500/20 border-red-500 text-red-400'
+                    : f === 'Breakeven' ? 'bg-yellow-500/20 border-yellow-500 text-yellow-400'
+                    : 'bg-gray-700 border-gray-600 text-white'
+                    : 'bg-gray-800 border-gray-700 text-gray-400 hover:border-gray-500'
+                }`}
+              >
+                {f}
+              </button>
+            ))}
+
+            <button
+              onClick={exportCSV}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-gray-700 text-gray-300 text-xs hover:bg-gray-800 transition-all"
+            >
+              <Download size={13} /> Export
+            </button>
+
+            <button
+              onClick={() => { setEditTrade(null); setModalOpen(true); }}
+              className="flex items-center gap-1.5 px-4 py-1.5 rounded-xl bg-cyan-500 text-black text-sm font-semibold hover:bg-cyan-400 transition-all"
+            >
+              <Plus size={15} /> Trade
+            </button>
           </div>
         </div>
 
-        {!filtered.length ? (
-          <div className="text-center py-16 text-muted">
-            <div className="text-4xl mb-3">📋</div>
-            <div className="text-sm">No trades yet — log your first trade</div>
-          </div>
-        ) : (
+        {/* Stats row */}
+        <StatsRow trades={filtered} />
+
+        {/* Table */}
+        <div className="bg-gray-900 border border-gray-800 rounded-2xl overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full border-collapse text-sm">
+            <table className="w-full text-sm">
               <thead>
-                <tr className="bg-bg2">
-                  {['#','Date','Pair','Dir','Session','Lot','Risk','R:R','P&L','Result','Chart',''].map(h => (
-                    <th key={h} className="text-left px-4 py-2.5 text-[10px] font-semibold text-muted uppercase tracking-wider border-b border-border">{h}</th>
+                <tr className="border-b border-gray-800">
+                  {['Date','Pair','Dir','Session','Setup','R:R','Result','PNL',''].map(h => (
+                    <th key={h} className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider px-4 py-3">
+                      {h}
+                    </th>
                   ))}
                 </tr>
               </thead>
               <tbody>
-                {filtered.map((t, i) => (
-                  <React.Fragment key={t.id}>
-                    <tr onClick={() => setExpanded(expanded === t.id ? null : t.id)}
-                      className="border-b border-border hover:bg-bg3 cursor-pointer transition-colors">
-                      <td className="px-4 py-3 font-mono text-[10px] text-muted">#{String(trades.length - i).padStart(3,'0')}</td>
-                      <td className="px-4 py-3 font-mono text-[11px] text-zinc-400">{t.date}</td>
-                      <td className="px-4 py-3 font-semibold text-[13px] text-zinc-100">{t.pair}</td>
-                      <td className="px-4 py-3"><span className={t.direction === 'Buy' ? 'badge-buy' : 'badge-sell'}>{t.direction}</span></td>
-                      <td className="px-4 py-3 text-xs text-muted">{t.session}</td>
-                      <td className="px-4 py-3 font-mono text-xs text-zinc-300">{t.lot || '—'}</td>
-                      <td className="px-4 py-3 font-mono text-xs text-zinc-300">{t.risk ? t.risk+'%' : '—'}</td>
-                      <td className="px-4 py-3 font-mono text-xs" style={{color:'#a855f7'}}>1:{t.rr||'—'}</td>
-                      <td className={clsx('px-4 py-3 font-mono text-[12px] font-semibold', t.pl>=0?'text-green':'text-red')}>
-                        {t.pl>=0?'+':''}${t.pl.toFixed(2)}
-                      </td>
-                      <td className="px-4 py-3"><span className={`badge-${t.result.toLowerCase() as 'win'|'loss'|'be'}`}>{t.result}</span></td>
+                {filtered.length === 0 && (
+                  <tr>
+                    <td colSpan={9} className="text-center text-gray-500 py-12">
+                      Trade байхгүй байна
+                    </td>
+                  </tr>
+                )}
+                {filtered.map(trade => (
+                  <React.Fragment key={trade.id}>
+                    <tr
+                      className="border-b border-gray-800/50 hover:bg-gray-800/30 transition-colors cursor-pointer"
+                      onClick={() => setExpandedId(expandedId === trade.id ? null : trade.id)}
+                    >
+                      <td className="px-4 py-3 text-gray-300 whitespace-nowrap">{trade.date}</td>
+                      <td className="px-4 py-3 font-mono text-white font-medium">{trade.pair}</td>
                       <td className="px-4 py-3">
-                        {thumb(t)
-                          ? <img src={thumb(t)!} onClick={e => { e.stopPropagation(); setLightbox(thumb(t)) }}
-                              className="w-10 h-7 object-cover rounded border border-border2 hover:border-accent cursor-pointer transition-colors" alt="chart"/>
-                          : <span className="text-muted text-xs">—</span>}
+                        {trade.direction === 'buy'
+                          ? <span className="flex items-center gap-1 text-emerald-400"><TrendingUp size={13}/> BUY</span>
+                          : <span className="flex items-center gap-1 text-red-400"><TrendingDown size={13}/> SELL</span>
+                        }
+                      </td>
+                      <td className="px-4 py-3 text-gray-400">{trade.session}</td>
+                      <td className="px-4 py-3 text-gray-300 max-w-[120px] truncate">{trade.setup || '—'}</td>
+                      <td className="px-4 py-3 font-mono text-gray-300">{trade.rrRatio}</td>
+                      <td className="px-4 py-3">
+                        <ResultBadge result={trade.result} />
+                      </td>
+                      <td className={`px-4 py-3 font-mono font-semibold ${
+                        trade.pnl > 0 ? 'text-emerald-400' : trade.pnl < 0 ? 'text-red-400' : 'text-yellow-400'
+                      }`}>
+                        {trade.pnl > 0 ? '+' : ''}{trade.pnl?.toFixed(2) ?? '0.00'}
                       </td>
                       <td className="px-4 py-3">
-                        <div className="flex items-center gap-1">
-                          {expanded === t.id ? <ChevronDown size={12} className="text-muted"/> : <ChevronRight size={12} className="text-muted"/>}
-                          <button onClick={e => { e.stopPropagation(); onEdit(t) }}
-                            className="text-muted hover:text-accent transition-colors p-1">
-                            <Pencil size={11}/>
+                        <div className="flex items-center gap-2" onClick={e => e.stopPropagation()}>
+                          <button
+                            onClick={() => handleEdit(trade)}
+                            className="p-1.5 rounded-lg hover:bg-gray-700 text-gray-400 hover:text-cyan-400 transition-all"
+                          >
+                            <Pencil size={13} />
                           </button>
-                          <button onClick={e => { e.stopPropagation(); if(confirm('Delete this trade?')) onDelete(t.id) }}
-                            className="text-muted hover:text-red transition-colors p-1">
-                            <Trash2 size={11}/>
+                          <button
+                            onClick={() => handleDelete(trade.id)}
+                            className="p-1.5 rounded-lg hover:bg-gray-700 text-gray-400 hover:text-red-400 transition-all"
+                          >
+                            <Trash2 size={13} />
                           </button>
+                          {expandedId === trade.id
+                            ? <ChevronUp size={14} className="text-gray-400" />
+                            : <ChevronDown size={14} className="text-gray-400" />
+                          }
                         </div>
                       </td>
                     </tr>
 
-                    {expanded === t.id && (
-                      <tr className="border-b border-border" style={{background:'rgba(20,21,25,0.6)'}}>
-                        <td colSpan={12} className="px-6 py-4">
-                          <div className="grid grid-cols-3 gap-4 text-sm mb-3">
-                            <div>
-                              <div className="text-[10px] font-semibold text-muted uppercase tracking-wider mb-1">Strategy</div>
-                              <div className="text-zinc-300">{t.strategy}</div>
+                    {/* Expanded row */}
+                    {expandedId === trade.id && (
+                      <tr key={`${trade.id}-exp`} className="bg-gray-800/20">
+                        <td colSpan={9} className="px-6 py-5">
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            {/* Left: details */}
+                            <div className="space-y-3 text-sm">
+                              <DetailRow label="Account" value={trade.account} />
+                              <DetailRow label="Lot Size" value={trade.lotSize?.toString()} />
+                              <DetailRow label="Risk %" value={`${trade.riskPercent}%`} />
+                              <DetailRow label="Psychology" value={trade.psychology} />
+                              <DetailRow label="Plan" value={trade.planExecution} />
+                              <DetailRow label="Confidence" value={trade.confidence} />
+                              <DetailRow label="Closed By" value={trade.closedBy} />
+                              <DetailRow label="Gain R:R" value={trade.gainRR?.toString()} />
+                              <DetailRow label="Gain %" value={`${trade.gainPercent}%`} />
+                              {trade.entryDetails && (
+                                <div>
+                                  <span className="text-gray-500 text-xs uppercase tracking-wider">Entry Details</span>
+                                  <p className="text-gray-300 mt-1 text-sm leading-relaxed">{trade.entryDetails}</p>
+                                </div>
+                              )}
+                              {trade.review && (
+                                <div>
+                                  <span className="text-gray-500 text-xs uppercase tracking-wider">Review</span>
+                                  <p className="text-gray-300 mt-1 text-sm leading-relaxed">{trade.review}</p>
+                                </div>
+                              )}
                             </div>
-                            <div>
-                              <div className="text-[10px] font-semibold text-muted uppercase tracking-wider mb-1">Psychology</div>
-                              <div className="text-zinc-300">{t.emotion}</div>
-                            </div>
-                            <div>
-                              <div className="text-[10px] font-semibold text-muted uppercase tracking-wider mb-1">Notes</div>
-                              <div className="text-zinc-300 leading-relaxed">{t.notes || <span className="text-muted italic">No notes</span>}</div>
+
+                            {/* Right: screenshots */}
+                            <div className="space-y-4">
+                              {trade.screenshotBefore?.length > 0 && (
+                                <div>
+                                  <span className="text-xs font-medium text-cyan-400 uppercase tracking-wider">Before</span>
+                                  <div className="flex gap-2 mt-2">
+                                    {trade.screenshotBefore.map((img, i) => (
+                                      <img
+                                        key={i}
+                                        src={img}
+                                        alt={`before ${i+1}`}
+                                        className="w-32 h-20 object-cover rounded-lg border border-cyan-500/30 cursor-pointer hover:border-cyan-400 transition-all"
+                                        onClick={() => setLightbox(img)}
+                                      />
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+                              {trade.screenshotAfter?.length > 0 && (
+                                <div>
+                                  <span className="text-xs font-medium text-purple-400 uppercase tracking-wider">After</span>
+                                  <div className="flex gap-2 mt-2">
+                                    {trade.screenshotAfter.map((img, i) => (
+                                      <img
+                                        key={i}
+                                        src={img}
+                                        alt={`after ${i+1}`}
+                                        className="w-32 h-20 object-cover rounded-lg border border-purple-500/30 cursor-pointer hover:border-purple-400 transition-all"
+                                        onClick={() => setLightbox(img)}
+                                      />
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
                             </div>
                           </div>
-
-                          {(t.screenshotBefore || t.screenshotBase64 || t.screenshotAfter) && (
-                            <div className="flex gap-3 mt-1">
-                              {(t.screenshotBefore || t.screenshotBase64) && (
-                                <div className="flex-1">
-                                  <div className="text-[10px] font-semibold mb-1.5" style={{color:'#00e5ff'}}>Before</div>
-                                  <img
-                                    src={t.screenshotBefore || t.screenshotBase64!}
-                                    onClick={() => setLightbox(t.screenshotBefore || t.screenshotBase64!)}
-                                    className="w-full max-h-44 rounded-lg border border-border2 cursor-pointer object-contain transition-colors hover:border-accent"
-                                    alt="before"/>
-                                </div>
-                              )}
-                              {t.screenshotAfter && (
-                                <div className="flex-1">
-                                  <div className="text-[10px] font-semibold mb-1.5" style={{color:'#a855f7'}}>After</div>
-                                  <img
-                                    src={t.screenshotAfter}
-                                    onClick={() => setLightbox(t.screenshotAfter!)}
-                                    className="w-full max-h-44 rounded-lg border border-border2 cursor-pointer object-contain transition-colors hover:border-purple-500"
-                                    alt="after"/>
-                                </div>
-                              )}
-                            </div>
-                          )}
                         </td>
                       </tr>
                     )}
@@ -239,15 +302,60 @@ export default function TradesPage({ trades, onAdd, onEdit, onDelete, onImport, 
               </tbody>
             </table>
           </div>
-        )}
-      </div>
-
-      {lightbox && (
-        <div className="fixed inset-0 bg-black/90 z-[600] flex items-center justify-center p-4" onClick={() => setLightbox(null)}>
-          <img src={lightbox} className="max-w-[90vw] max-h-[88vh] rounded-xl border border-border2 object-contain"/>
-          <button onClick={() => setLightbox(null)} className="absolute top-4 right-5 text-muted hover:text-zinc-200 text-2xl">×</button>
         </div>
-      )}
+      </div>
+    </>
+  );
+}
+
+// ── Sub-components ──
+
+function StatsRow({ trades }: { trades: Trade[] }) {
+  const wins = trades.filter(t => t.result === 'Win').length;
+  const losses = trades.filter(t => t.result === 'Loss').length;
+  const total = trades.length;
+  const winRate = total ? ((wins / total) * 100).toFixed(1) : '0.0';
+  const totalPnl = trades.reduce((sum, t) => sum + (t.pnl || 0), 0);
+
+  return (
+    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      {[
+        { label: 'Нийт', value: total.toString(), color: 'text-white' },
+        { label: 'Win Rate', value: `${winRate}%`, color: 'text-emerald-400' },
+        { label: 'Win / Loss', value: `${wins} / ${losses}`, color: 'text-gray-300' },
+        {
+          label: 'Total PNL',
+          value: `${totalPnl >= 0 ? '+' : ''}${totalPnl.toFixed(2)}`,
+          color: totalPnl >= 0 ? 'text-emerald-400' : 'text-red-400'
+        },
+      ].map(s => (
+        <div key={s.label} className="bg-gray-900 border border-gray-800 rounded-xl px-4 py-3">
+          <div className="text-xs text-gray-500 uppercase tracking-wider mb-1">{s.label}</div>
+          <div className={`text-lg font-semibold font-mono ${s.color}`}>{s.value}</div>
+        </div>
+      ))}
     </div>
-  )
+  );
+}
+
+function ResultBadge({ result }: { result: Trade['result'] }) {
+  const cls =
+    result === 'Win' ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30'
+    : result === 'Loss' ? 'bg-red-500/15 text-red-400 border-red-500/30'
+    : 'bg-yellow-500/15 text-yellow-400 border-yellow-500/30';
+  return (
+    <span className={`px-2 py-0.5 rounded-md text-xs font-medium border ${cls}`}>
+      {result}
+    </span>
+  );
+}
+
+function DetailRow({ label, value }: { label: string; value?: string }) {
+  if (!value) return null;
+  return (
+    <div className="flex items-center gap-2">
+      <span className="text-gray-500 text-xs w-24 shrink-0">{label}</span>
+      <span className="text-gray-300">{value}</span>
+    </div>
+  );
 }
