@@ -1,7 +1,7 @@
 // src/pages/ProfilePage.tsx
 import { useState, useRef } from 'react';
 import { User, updateProfile } from 'firebase/auth';
-import { Plus, Trash2, Target, X, Pencil, Check, Camera, Quote, TrendingUp, TrendingDown, BarChart2, Wallet } from 'lucide-react';
+import { Plus, Trash2, Target, X, Pencil, Check, Camera, Quote, TrendingUp, TrendingDown, BarChart2, Wallet, ChevronRight } from 'lucide-react';
 import { Trade, TradingAccount, UserSettings } from '../types';
 import { auth } from '../lib/firebase';
 
@@ -186,21 +186,26 @@ export default function ProfilePage({ user, userSettings, trades, onUpdateSettin
           existing={pairs} />
       )}
 
-      <div className="p-6 max-w-2xl mx-auto space-y-5 fade-in">
+      <div className="min-h-screen py-8 px-6 flex flex-col items-center fade-in">
+        <div className="w-full max-w-2xl space-y-5">
 
         {/* ── Profile card ── */}
         <div className="card overflow-hidden">
           {/* Banner */}
-          <div className="h-28 relative" style={{
-            background: 'linear-gradient(135deg, rgba(0,229,255,0.15) 0%, rgba(168,85,247,0.12) 50%, rgba(0,229,255,0.06) 100%)'
+          <div className="h-32 relative" style={{
+            background: 'linear-gradient(135deg, #0f1a2e 0%, #0d1f3c 40%, #111827 100%)'
           }}>
-            <div className="absolute inset-0 opacity-20"
-              style={{ backgroundImage: 'radial-gradient(circle at 20% 50%, #00e5ff 0%, transparent 50%), radial-gradient(circle at 80% 50%, #a855f7 0%, transparent 50%)' }} />
+            {/* Decorative glows */}
+            <div className="absolute inset-0"
+              style={{ backgroundImage: 'radial-gradient(ellipse at 15% 60%, rgba(0,229,255,0.22) 0%, transparent 55%), radial-gradient(ellipse at 85% 40%, rgba(168,85,247,0.18) 0%, transparent 55%)' }} />
+            {/* Grid lines */}
+            <div className="absolute inset-0 opacity-[0.04]"
+              style={{ backgroundImage: 'linear-gradient(rgba(255,255,255,1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,1) 1px, transparent 1px)', backgroundSize: '32px 32px' }} />
             {!editing && (
               <button onClick={startEdit}
-                className="absolute top-3 right-3 btn-icon backdrop-blur-sm"
-                style={{ background: 'rgba(0,0,0,0.4)', border: '1px solid rgba(255,255,255,0.1)' }}>
-                <Pencil size={13} />
+                className="absolute top-3 right-3 flex items-center gap-1.5 text-xs text-zinc-400 hover:text-white transition-colors px-3 py-1.5 rounded-lg backdrop-blur-sm"
+                style={{ background: 'rgba(0,0,0,0.45)', border: '1px solid rgba(255,255,255,0.08)' }}>
+                <Pencil size={11} /> Засах
               </button>
             )}
           </div>
@@ -210,11 +215,12 @@ export default function ProfilePage({ user, userSettings, trades, onUpdateSettin
               /* ── Edit mode ── */
               <div className="space-y-5 pt-4">
                 <div className="flex items-center gap-5">
-                  <div className="relative -mt-14 shrink-0">
-                    <Avatar src={editAvatar} name={editName || displayName} size="w-20 h-20" />
+                  <div className="relative z-10 -mt-16 shrink-0">
+                    <Avatar src={editAvatar} name={editName || displayName} size="w-24 h-24" />
                     <button onClick={() => avatarRef.current?.click()}
-                      className="absolute inset-0 rounded-2xl bg-black/60 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
-                      <Camera size={18} className="text-white" />
+                      className="absolute inset-0 rounded-2xl bg-black/60 flex flex-col items-center justify-center gap-1 opacity-0 hover:opacity-100 transition-opacity">
+                      <Camera size={16} className="text-white" />
+                      <span className="text-white text-[10px] font-medium">Солих</span>
                     </button>
                     <input ref={avatarRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarFile} />
                   </div>
@@ -226,7 +232,7 @@ export default function ProfilePage({ user, userSettings, trades, onUpdateSettin
                   </div>
                 </div>
                 <div>
-                  <label className="label">Ишлэл / Bio</label>
+                  <label className="label flex items-center gap-1.5"><Quote size={11} className="text-accent" /> Ишлэл / Bio</label>
                   <textarea value={editBio} rows={3}
                     onChange={e => setEditBio(e.target.value.slice(0, 160))}
                     placeholder="Арилжааны тухай философи, зарчим, эсвэл мотивац..."
@@ -245,38 +251,41 @@ export default function ProfilePage({ user, userSettings, trades, onUpdateSettin
             ) : (
               /* ── View mode ── */
               <div>
-                <div className="flex items-end gap-4 -mt-12 mb-4">
-                  <Avatar src={displayAvatar} name={displayName} size="w-20 h-20" />
-                  <div className="pb-1 flex-1 min-w-0">
-                    <p className="text-white text-xl font-bold truncate">{displayName}</p>
+                <div className="relative z-10 flex items-end gap-4 -mt-14 mb-5">
+                  <Avatar src={displayAvatar} name={displayName} size="w-24 h-24" />
+                  <div className="pb-1.5 flex-1 min-w-0">
+                    <p className="text-white text-2xl font-bold tracking-tight truncate">{displayName}</p>
                     <p className="text-muted text-sm truncate">{user.email}</p>
                   </div>
                 </div>
 
                 {displayBio ? (
-                  <div className="flex items-start gap-2.5 bg-bg3 border border-border rounded-xl px-4 py-3 mb-5">
-                    <Quote size={14} className="text-accent shrink-0 mt-0.5" />
+                  <div className="flex items-start gap-2.5 rounded-xl px-4 py-3 mb-5"
+                    style={{ background: 'rgba(0,229,255,0.05)', border: '1px solid rgba(0,229,255,0.12)' }}>
+                    <Quote size={13} className="text-accent shrink-0 mt-0.5" />
                     <p className="text-zinc-300 text-sm leading-relaxed italic">{displayBio}</p>
                   </div>
                 ) : (
-                  <button onClick={startEdit} className="mb-5 text-muted text-sm italic hover:text-zinc-400 transition-colors">
-                    + Ишлэл нэмэх...
+                  <button onClick={startEdit}
+                    className="mb-5 w-full flex items-center gap-2 text-muted text-sm italic hover:text-zinc-400 transition-colors px-3 py-2 rounded-lg border border-dashed border-border hover:border-border2">
+                    <Quote size={12} /> Ишлэл нэмэх...
                   </button>
                 )}
 
                 {/* Stats row */}
-                <div className="grid grid-cols-3 divide-x divide-border border border-border rounded-xl overflow-hidden">
+                <div className="grid grid-cols-3 gap-3">
                   {[
-                    { icon: BarChart2, label: 'Нийт арилжаа', val: String(totalTrades), color: '#00e5ff' },
-                    { icon: Target,    label: 'Win Rate',      val: overallWR + '%',     color: '#22c55e' },
+                    { icon: BarChart2, label: 'Нийт арилжаа', val: String(totalTrades), color: '#00e5ff', bg: 'rgba(0,229,255,0.07)' },
+                    { icon: Target,    label: 'Win Rate',      val: overallWR + '%',     color: '#22c55e', bg: 'rgba(34,197,94,0.07)' },
                     { icon: Wallet,    label: 'Нийт P&L',
                       val: (totalPnl >= 0 ? '+$' : '-$') + Math.abs(totalPnl).toLocaleString('en', { maximumFractionDigits: 0 }),
-                      color: totalPnl >= 0 ? '#22c55e' : '#ef4444' },
-                  ].map(({ icon: Icon, label, val, color }) => (
-                    <div key={label} className="bg-bg3 px-4 py-3 text-center">
-                      <Icon size={13} className="mx-auto mb-1.5" style={{ color }} />
+                      color: totalPnl >= 0 ? '#22c55e' : '#ef4444',
+                      bg: totalPnl >= 0 ? 'rgba(34,197,94,0.07)' : 'rgba(239,68,68,0.07)' },
+                  ].map(({ icon: Icon, label, val, color, bg }) => (
+                    <div key={label} className="rounded-xl p-3.5 text-center" style={{ background: bg, border: `1px solid ${color}20` }}>
+                      <Icon size={14} className="mx-auto mb-2" style={{ color }} />
                       <div className="text-lg font-bold font-mono leading-none" style={{ color }}>{val}</div>
-                      <div className="text-[11px] text-muted mt-1">{label}</div>
+                      <div className="text-[11px] text-muted mt-1.5">{label}</div>
                     </div>
                   ))}
                 </div>
@@ -289,8 +298,8 @@ export default function ProfilePage({ user, userSettings, trades, onUpdateSettin
         <div className="card p-5 space-y-4">
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="text-white font-semibold">Арилжааны Pair</h2>
-              <p className="text-muted text-xs mt-0.5">Trade бүртгэхэд харагдах</p>
+              <h2 className="text-white font-semibold text-[15px]">Арилжааны Pair</h2>
+              <p className="text-muted text-xs mt-0.5">Trade бүртгэхэд харагдах · {pairs.length} pair</p>
             </div>
             <button onClick={() => setShowAddPair(true)} className="btn-primary text-xs px-3 py-1.5">
               <Plus size={13} /> Нэмэх
@@ -299,17 +308,20 @@ export default function ProfilePage({ user, userSettings, trades, onUpdateSettin
           <div className="flex flex-wrap gap-2">
             {pairs.map(p => (
               <span key={p}
-                className="group flex items-center gap-1.5 border border-border2 text-xs font-mono font-semibold px-3 py-1.5 rounded-lg transition-colors hover:border-accent/40"
-                style={{ background: 'rgba(0,229,255,0.05)', color: '#a1a1aa' }}>
-                <span className="text-accent/80">{p}</span>
+                className="group flex items-center gap-1.5 text-xs font-mono font-semibold px-3 py-1.5 rounded-lg transition-all hover:scale-105"
+                style={{ background: 'rgba(0,229,255,0.08)', border: '1px solid rgba(0,229,255,0.2)', color: '#00e5ff' }}>
+                {p}
                 <button onClick={() => onUpdateSettings({ pairs: pairs.filter(x => x !== p) })}
-                  className="text-muted hover:text-red transition-colors opacity-50 group-hover:opacity-100 ml-0.5">
+                  className="transition-colors opacity-40 group-hover:opacity-100 hover:text-red ml-0.5">
                   <X size={10} />
                 </button>
               </span>
             ))}
             {pairs.length === 0 && (
-              <span className="text-muted text-sm">Pair байхгүй байна</span>
+              <button onClick={() => setShowAddPair(true)}
+                className="text-muted text-sm italic hover:text-zinc-400 transition-colors">
+                + Pair нэмэх...
+              </button>
             )}
           </div>
         </div>
@@ -318,8 +330,8 @@ export default function ProfilePage({ user, userSettings, trades, onUpdateSettin
         <div className="space-y-3">
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="text-white font-semibold">Арилжааны Данснууд</h2>
-              <p className="text-muted text-xs mt-0.5">{accounts.length ? `${accounts.length} данс` : 'Данс байхгүй'}</p>
+              <h2 className="text-white font-semibold text-[15px]">Арилжааны Данснууд</h2>
+              <p className="text-muted text-xs mt-0.5">{accounts.length ? `${accounts.length} данс идэвхтэй` : 'Данс байхгүй'}</p>
             </div>
             <button onClick={() => setShowAddAccount(true)} className="btn-primary text-xs px-3 py-1.5">
               <Plus size={13} /> Данс нэмэх
@@ -328,11 +340,15 @@ export default function ProfilePage({ user, userSettings, trades, onUpdateSettin
 
           {accounts.length === 0 && (
             <div className="card p-10 text-center space-y-3">
-              <div className="w-12 h-12 rounded-2xl bg-bg3 flex items-center justify-center mx-auto">
-                <Wallet size={20} className="text-muted" />
+              <div className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto"
+                style={{ background: 'rgba(0,229,255,0.07)', border: '1px solid rgba(0,229,255,0.15)' }}>
+                <Wallet size={22} className="text-accent" />
               </div>
-              <p className="text-muted text-sm">Данс байхгүй байна</p>
-              <button onClick={() => setShowAddAccount(true)} className="btn-primary mx-auto">
+              <div>
+                <p className="text-white font-medium">Данс байхгүй байна</p>
+                <p className="text-muted text-sm mt-1">Арилжааны данс нэмж эхлэнэ үү</p>
+              </div>
+              <button onClick={() => setShowAddAccount(true)} className="btn-primary mx-auto mt-2">
                 <Plus size={14} /> Данс нэмэх
               </button>
             </div>
@@ -350,62 +366,68 @@ export default function ProfilePage({ user, userSettings, trades, onUpdateSettin
             const isUp = pnl >= 0;
 
             return (
-              <div key={acc.name} className="card overflow-hidden group">
+              <div key={acc.name} className="card overflow-hidden group hover:border-border2 transition-colors">
                 {/* Color top bar */}
-                <div className="h-1" style={{ background: isUp ? 'linear-gradient(90deg,#22c55e,#00e5ff)' : 'linear-gradient(90deg,#ef4444,#f97316)' }} />
+                <div className="h-[3px]" style={{ background: isUp ? 'linear-gradient(90deg,#22c55e,#00e5ff)' : 'linear-gradient(90deg,#ef4444,#f97316)' }} />
 
                 <div className="p-5">
                   {/* Header */}
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
-                        style={{ background: isUp ? 'rgba(34,197,94,0.12)' : 'rgba(239,68,68,0.12)' }}>
-                        {isUp ? <TrendingUp size={16} className="text-green" /> : <TrendingDown size={16} className="text-red" />}
+                      <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
+                        style={{ background: isUp ? 'rgba(34,197,94,0.1)' : 'rgba(239,68,68,0.1)', border: `1px solid ${isUp ? 'rgba(34,197,94,0.2)' : 'rgba(239,68,68,0.2)'}` }}>
+                        {isUp ? <TrendingUp size={17} className="text-green" /> : <TrendingDown size={17} className="text-red" />}
                       </div>
                       <div>
-                        <p className="text-white font-semibold leading-tight">{acc.name}</p>
-                        <p className="text-muted text-xs">{accTrades.length} trade</p>
+                        <p className="text-white font-bold leading-tight">{acc.name}</p>
+                        <p className="text-muted text-xs">{accTrades.length} арилжаа</p>
                       </div>
                     </div>
-                    <button
-                      onClick={() => { if (confirm(`"${acc.name}" дансыг устгах уу?`)) onUpdateSettings({ accounts: accounts.filter(a => a.name !== acc.name) }); }}
-                      className="text-border2 hover:text-red transition-colors opacity-0 group-hover:opacity-100 p-1.5">
-                      <Trash2 size={14} />
-                    </button>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-mono font-semibold px-2 py-0.5 rounded-md"
+                        style={{ color: isUp ? '#22c55e' : '#ef4444', background: isUp ? 'rgba(34,197,94,0.1)' : 'rgba(239,68,68,0.1)' }}>
+                        {isUp ? '+' : ''}${pnl.toFixed(0)}
+                      </span>
+                      <button
+                        onClick={() => { if (confirm(`"${acc.name}" дансыг устгах уу?`)) onUpdateSettings({ accounts: accounts.filter(a => a.name !== acc.name) }); }}
+                        className="text-border2 hover:text-red transition-colors opacity-0 group-hover:opacity-100 p-1.5 rounded-lg hover:bg-red/10">
+                        <Trash2 size={13} />
+                      </button>
+                    </div>
                   </div>
 
                   {/* Stats grid */}
-                  <div className="grid grid-cols-3 gap-3 mb-4">
-                    <div className="bg-bg3 rounded-xl p-3">
-                      <p className="text-[11px] text-muted uppercase tracking-wider mb-2">Win Rate</p>
-                      <p className={`text-xl font-bold font-mono ${wr === null ? 'text-muted' : wr >= 50 ? 'text-green' : 'text-red'}`}>
-                        {wr !== null ? wr.toFixed(1) + '%' : '—'}
+                  <div className="grid grid-cols-3 gap-2.5 mb-4">
+                    <div className="bg-bg3 rounded-xl p-3.5">
+                      <p className="text-[10px] text-muted uppercase tracking-widest mb-2">Win Rate</p>
+                      <p className={`text-2xl font-bold font-mono leading-none ${wr === null ? 'text-muted' : wr >= 50 ? 'text-green' : 'text-red'}`}>
+                        {wr !== null ? wr.toFixed(0) + '%' : '—'}
                       </p>
-                      <p className="text-[11px] text-muted mt-1">{wins}W · {accTrades.length - wins}L</p>
+                      <p className="text-[11px] text-muted mt-1.5">{wins}W · {accTrades.length - wins}L</p>
                     </div>
-                    <div className="bg-bg3 rounded-xl p-3">
-                      <p className="text-[11px] text-muted uppercase tracking-wider mb-2">Balance</p>
-                      <p className={`text-xl font-bold font-mono ${isUp ? 'text-green' : 'text-red'}`}>
+                    <div className="bg-bg3 rounded-xl p-3.5">
+                      <p className="text-[10px] text-muted uppercase tracking-widest mb-2">Balance</p>
+                      <p className={`text-2xl font-bold font-mono leading-none ${isUp ? 'text-green' : 'text-red'}`}>
                         ${current.toLocaleString('en', { maximumFractionDigits: 0 })}
                       </p>
-                      <p className={`text-[11px] font-mono mt-1 ${isUp ? 'text-green' : 'text-red'}`}>
-                        {isUp ? '+' : ''}${pnl.toFixed(0)}
-                      </p>
+                      <p className="text-[11px] text-muted mt-1.5">эхлэл ${acc.balance.toLocaleString('en', { maximumFractionDigits: 0 })}</p>
                     </div>
-                    <div className="bg-bg3 rounded-xl p-3">
-                      <p className="text-[11px] text-muted uppercase tracking-wider mb-2 flex items-center gap-1"><Target size={9} /> Goal</p>
-                      <p className="text-xl font-bold font-mono text-yellow">
+                    <div className="bg-bg3 rounded-xl p-3.5">
+                      <p className="text-[10px] text-muted uppercase tracking-widest mb-2 flex items-center gap-1"><Target size={9} /> Goal</p>
+                      <p className="text-2xl font-bold font-mono leading-none text-yellow-400">
                         ${acc.goal.toLocaleString('en', { maximumFractionDigits: 0 })}
                       </p>
-                      <p className="text-[11px] text-muted mt-1">эхлэл ${acc.balance.toLocaleString('en', { maximumFractionDigits: 0 })}</p>
+                      <p className="text-[11px] text-muted mt-1.5 flex items-center gap-1">
+                        <ChevronRight size={9} /> зорилго
+                      </p>
                     </div>
                   </div>
 
                   {/* Progress */}
-                  <div>
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-xs text-muted">Зорилгын явц</span>
-                      <span className="text-xs font-mono font-semibold"
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[11px] text-muted">Зорилгын явц</span>
+                      <span className="text-xs font-mono font-bold"
                         style={{ color: progress >= 100 ? '#22c55e' : progress > 50 ? '#eab308' : '#00e5ff' }}>
                         {progress.toFixed(1)}%
                       </span>
@@ -415,9 +437,10 @@ export default function ProfilePage({ user, userSettings, trades, onUpdateSettin
                         style={{
                           width: `${progress}%`,
                           background: progress >= 100 ? '#22c55e' : 'linear-gradient(90deg, #00e5ff, #22c55e)',
+                          boxShadow: progress > 0 ? `0 0 8px ${progress >= 100 ? '#22c55e80' : '#00e5ff60'}` : 'none',
                         }} />
                     </div>
-                    <div className="flex justify-between text-[11px] text-muted mt-1.5">
+                    <div className="flex justify-between text-[10px] text-muted">
                       <span>${acc.balance.toLocaleString()}</span>
                       <span>${acc.goal.toLocaleString()}</span>
                     </div>
@@ -426,6 +449,8 @@ export default function ProfilePage({ user, userSettings, trades, onUpdateSettin
               </div>
             );
           })}
+        </div>
+
         </div>
       </div>
     </>
