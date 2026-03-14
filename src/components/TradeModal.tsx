@@ -262,64 +262,40 @@ export default function TradeModal({ isOpen, onClose, onSave, editTrade, userSet
                 {/* Lot Size + Risk % */}
                 <div className="grid grid-cols-2 gap-4">
                   <Field label="Lot Size">
-                    <input
-                      type="number"
-                      step="0.01"
-                      min="0.01"
+                    <NumericInput
                       value={form.lotSize}
-                      onChange={e => set('lotSize', parseFloat(e.target.value) || 0.01)}
-                      className={inputCls}
+                      onChange={v => set('lotSize', v)}
+                      step={0.01}
+                      min={0.01}
                     />
                   </Field>
                   <Field label="Risk %">
-                    <input
-                      type="number"
-                      step="0.1"
-                      min="0"
+                    <NumericInput
                       value={form.riskPercent}
-                      onChange={e => set('riskPercent', parseFloat(e.target.value) || 0)}
-                      className={inputCls}
+                      onChange={v => set('riskPercent', v)}
+                      step={0.1}
+                      min={0}
                     />
                   </Field>
                 </div>
 
-                {/* Session */}
-                <Field label="Session">
-                  <div className="flex flex-wrap gap-2">
-                    {SESSIONS.map(s => (
-                      <button
-                        key={s}
-                        onClick={() => set('session', s as typeof form.session)}
-                        className={`px-3 py-1.5 rounded-lg text-sm transition-all border ${
-                          form.session === s
-                            ? 'bg-blue-500/20 border-blue-500 text-blue-300'
-                            : 'bg-gray-800 border-gray-700 text-gray-400 hover:border-gray-500'
-                        }`}
-                      >
-                        {s}
-                      </button>
-                    ))}
-                  </div>
-                </Field>
-
-                {/* R:R */}
-                <Field label="Risk : Reward">
-                  <div className="flex flex-wrap gap-2">
-                    {RR_RATIOS.map(r => (
-                      <button
-                        key={r}
-                        onClick={() => set('rrRatio', r as typeof form.rrRatio)}
-                        className={`px-3 py-1.5 rounded-lg text-xs font-mono transition-all border ${
-                          form.rrRatio === r
-                            ? 'bg-yellow-500/20 border-yellow-500 text-yellow-300'
-                            : 'bg-gray-800 border-gray-700 text-gray-400 hover:border-gray-500'
-                        }`}
-                      >
-                        {r}
-                      </button>
-                    ))}
-                  </div>
-                </Field>
+                {/* Session + R:R */}
+                <div className="grid grid-cols-2 gap-4">
+                  <Field label="Session">
+                    <Select
+                      value={form.session}
+                      onChange={v => set('session', v as typeof form.session)}
+                      options={[...SESSIONS]}
+                    />
+                  </Field>
+                  <Field label="Risk : Reward">
+                    <Select
+                      value={form.rrRatio}
+                      onChange={v => set('rrRatio', v as typeof form.rrRatio)}
+                      options={[...RR_RATIOS]}
+                    />
+                  </Field>
+                </div>
 
                 {/* Psychology + Plan Execution */}
                 <div className="grid grid-cols-2 gap-4">
@@ -452,21 +428,19 @@ export default function TradeModal({ isOpen, onClose, onSave, editTrade, userSet
                 {/* Gain R:R + Gain % */}
                 <div className="grid grid-cols-2 gap-4">
                   <Field label="Gain R:R">
-                    <input
-                      type="number"
-                      step="0.1"
+                    <NumericInput
                       value={form.gainRR}
-                      onChange={e => set('gainRR', parseFloat(e.target.value) || 0)}
-                      className={inputCls}
+                      onChange={v => set('gainRR', v)}
+                      step={0.1}
+                      min={0}
                     />
                   </Field>
                   <Field label="Gain %">
-                    <input
-                      type="number"
-                      step="0.01"
+                    <NumericInput
                       value={form.gainPercent}
-                      onChange={e => set('gainPercent', parseFloat(e.target.value) || 0)}
-                      className={inputCls}
+                      onChange={v => set('gainPercent', v)}
+                      step={0.01}
+                      min={0}
                     />
                   </Field>
                 </div>
@@ -474,14 +448,13 @@ export default function TradeModal({ isOpen, onClose, onSave, editTrade, userSet
                 {/* PNL */}
                 <Field label="PNL">
                   <div className="relative">
-                    <input
-                      type="number"
-                      step="0.01"
+                    <NumericInput
                       value={form.pnl}
-                      onChange={e => set('pnl', parseFloat(e.target.value) || 0)}
-                      className={`${inputCls} pr-24`}
+                      onChange={v => set('pnl', v)}
+                      step={0.01}
+                      min={-Infinity}
                     />
-                    <span className={`absolute right-3 top-1/2 -translate-y-1/2 text-sm font-semibold ${pnlColor}`}>
+                    <span className={`absolute right-3 top-1/2 -translate-y-1/2 text-sm font-semibold pointer-events-none ${pnlColor}`}>
                       {pnlLabel}
                     </span>
                   </div>
@@ -549,6 +522,42 @@ const btnPrimary = (color: 'cyan' | 'purple') =>
   color === 'cyan'
     ? 'px-6 py-2 rounded-xl bg-cyan-500 text-black font-semibold text-sm hover:bg-cyan-400 transition-all'
     : 'px-6 py-2 rounded-xl bg-purple-500 text-white font-semibold text-sm hover:bg-purple-400 transition-all';
+
+function NumericInput({ value, onChange, step, min }: {
+  value: number;
+  onChange: (v: number) => void;
+  step: number;
+  min?: number;
+}) {
+  const [display, setDisplay] = useState(String(value));
+
+  useEffect(() => {
+    if (parseFloat(display) !== value) setDisplay(String(value));
+  }, [value]);
+
+  return (
+    <input
+      type="number"
+      step={step}
+      min={min}
+      value={display}
+      onChange={e => {
+        setDisplay(e.target.value);
+        const n = parseFloat(e.target.value);
+        if (!isNaN(n)) onChange(n);
+      }}
+      onBlur={() => {
+        const n = parseFloat(display);
+        const safe = isNaN(n)
+          ? (min ?? 0)
+          : min !== undefined && n < min ? min : n;
+        onChange(safe);
+        setDisplay(String(safe));
+      }}
+      className={inputCls}
+    />
+  );
+}
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (

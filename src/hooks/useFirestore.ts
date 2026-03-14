@@ -79,13 +79,18 @@ export function useFirestore(userId: string | null) {
   const addTrade = async (
     tradeData: Omit<Trade, 'id' | 'userId' | 'createdAt' | 'updatedAt'>
   ) => {
-    if (!userId) return;
-    await addDoc(collection(db, 'trades'), {
-      ...tradeData,
-      userId,
-      createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp(),
-    });
+    if (!userId) { console.error('[addTrade] userId байхгүй'); return; }
+    try {
+      await addDoc(collection(db, 'trades'), {
+        ...tradeData,
+        userId,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      });
+    } catch (err) {
+      console.error('[addTrade] Firestore алдаа:', err);
+      alert(`Trade хадгалахад алдаа гарлаа:\n${(err as Error).message}`);
+    }
   };
 
   // ── Update trade ──
@@ -93,10 +98,15 @@ export function useFirestore(userId: string | null) {
     tradeId: string,
     tradeData: Partial<Omit<Trade, 'id' | 'userId' | 'createdAt'>>
   ) => {
-    await updateDoc(doc(db, 'trades', tradeId), {
-      ...tradeData,
-      updatedAt: serverTimestamp(),
-    });
+    try {
+      await updateDoc(doc(db, 'trades', tradeId), {
+        ...tradeData,
+        updatedAt: serverTimestamp(),
+      });
+    } catch (err) {
+      console.error('[updateTrade] Firestore алдаа:', err);
+      alert(`Trade шинэчлэхэд алдаа гарлаа:\n${(err as Error).message}`);
+    }
   };
 
   // ── Delete trade ──

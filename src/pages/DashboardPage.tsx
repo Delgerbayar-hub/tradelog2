@@ -55,23 +55,23 @@ export default function DashboardPage({ trades, account, onAdd }: Props) {
     return pts
   }, [trades, account])
 
-  const heatmap = useMemo(() => {
-    const weeks: { week: string; days: { date: string; pl: number; has: boolean }[] }[] = []
-    const today = new Date()
-    for (let w = 11; w >= 0; w--) {
-      const days = []
-      for (let d = 0; d < 7; d++) {
-        const dt = new Date(today)
-        dt.setDate(today.getDate() - w * 7 - (6 - d))
-        const ds = dt.toISOString().split('T')[0]
-        const dayTrades = trades.filter(t => t.date === ds)
-        const pl = dayTrades.reduce((s,t) => s + t.pnl, 0)
-        days.push({ date: ds, pl: +pl.toFixed(2), has: dayTrades.length > 0 })
-      }
-      weeks.push({ week: `W${12-w}`, days })
-    }
-    return weeks
-  }, [trades])
+  // const heatmap = useMemo(() => {
+  //   const weeks: { week: string; days: { date: string; pl: number; has: boolean }[] }[] = []
+  //   const today = new Date()
+  //   for (let w = 11; w >= 0; w--) {
+  //     const days = []
+  //     for (let d = 0; d < 7; d++) {
+  //       const dt = new Date(today)
+  //       dt.setDate(today.getDate() - w * 7 - (6 - d))
+  //       const ds = dt.toISOString().split('T')[0]
+  //       const dayTrades = trades.filter(t => t.date === ds)
+  //       const pl = dayTrades.reduce((s,t) => s + t.pnl, 0)
+  //       days.push({ date: ds, pl: +pl.toFixed(2), has: dayTrades.length > 0 })
+  //     }
+  //     weeks.push({ week: `W${12-w}`, days })
+  //   }
+  //   return weeks
+  // }, [trades])
 
   const sessions = useMemo(() =>
     ['Asian','London','New York'].map(s => ({
@@ -201,6 +201,7 @@ export default function DashboardPage({ trades, account, onAdd }: Props) {
         </div>
       </div>
 
+      {/* Heatmap hidden
       <div className="card p-5">
         <div className="font-semibold text-sm text-zinc-200 mb-4">Weekly P&L Heatmap <span className="text-muted font-normal text-xs ml-1">last 12 weeks</span></div>
         <div className="flex gap-1">
@@ -233,6 +234,7 @@ export default function DashboardPage({ trades, account, onAdd }: Props) {
           <span className="text-[9px] text-muted">More loss</span>
         </div>
       </div>
+      */}
 
       <div className="grid grid-cols-2 gap-4">
         <div className="card p-5">
