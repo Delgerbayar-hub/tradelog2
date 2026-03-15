@@ -113,7 +113,7 @@ export default function DashboardPage({ trades, userSettings, onAdd }: Props) {
               ))}
             </div>
           )}
-          <button onClick={onAdd} className="btn-primary">+ Log Trade</button>
+          <button onClick={onAdd} className="btn-primary">Арилжаа бүртгэх+</button>
         </div>
       </div>
 

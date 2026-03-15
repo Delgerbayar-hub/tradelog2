@@ -129,7 +129,7 @@ export default function CalendarPage({ trades, onAdd }: Props) {
             <h1 className="text-xl font-bold text-zinc-100 tracking-tight">Calendar</h1>
             <p className="text-sm text-muted mt-0.5">Өдөр бүрийн PNL</p>
           </div>
-          <button onClick={onAdd} className="btn-primary">+ Арилжаа нэмэх</button>
+          <button onClick={onAdd} className="btn-primary">Арилжаа бүртгэх+</button>
         </div>
 
         {/* Month stats */}

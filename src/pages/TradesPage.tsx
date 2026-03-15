@@ -33,7 +33,10 @@ export default function TradesPage({
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [filterResult, setFilterResult] = useState<'All' | 'Win' | 'Loss' | 'Breakeven'>('All');
+  const [filterAccount, setFilterAccount] = useState<string>('All');
   const [lightbox, setLightbox] = useState<string | null>(null);
+
+  const accounts = userSettings?.accounts ?? [];
 
   const filtered = trades.filter(t => {
     const matchSearch =
@@ -41,7 +44,8 @@ export default function TradesPage({
       t.setup?.toLowerCase().includes(search.toLowerCase()) ||
       t.account?.toLowerCase().includes(search.toLowerCase());
     const matchResult = filterResult === 'All' || t.result === filterResult;
-    return matchSearch && matchResult;
+    const matchAccount = filterAccount === 'All' || t.account === filterAccount;
+    return matchSearch && matchResult && matchAccount;
   });
 
   const handleSave = (data: Omit<Trade, 'id' | 'userId' | 'createdAt' | 'updatedAt'>) => {
@@ -152,10 +156,30 @@ export default function TradesPage({
               onClick={() => { setEditTrade(null); setModalOpen(true); }}
               className="btn-primary"
             >
-              <Plus size={15} /> Trade
+              <Plus size={15} /> Арилжаа бүртгэх
             </button>
           </div>
         </div>
+
+        {/* Account filter */}
+        {accounts.length > 0 && (
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-xs text-muted">Данс:</span>
+            {(['All', ...accounts.map(a => a.name)] as string[]).map(name => (
+              <button
+                key={name}
+                onClick={() => setFilterAccount(name)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-all ${
+                  filterAccount === name
+                    ? 'bg-accent/20 border-accent text-accent'
+                    : 'bg-bg3 border-border2 text-muted hover:border-muted'
+                }`}
+              >
+                {name === 'All' ? 'Бүгд' : name}
+              </button>
+            ))}
+          </div>
+        )}
 
         {/* Stats row */}
         <StatsRow trades={filtered} />
@@ -230,69 +254,77 @@ export default function TradesPage({
 
                     {/* Expanded row */}
                     {expandedId === trade.id && (
-                      <tr key={`${trade.id}-exp`} className="bg-bg3/30">
-                        <td colSpan={9} className="px-6 py-5">
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            {/* Left: details */}
-                            <div className="space-y-3 text-sm">
-                              <DetailRow label="Account" value={trade.account} />
-                              <DetailRow label="Lot Size" value={trade.lotSize?.toString()} />
-                              <DetailRow label="Risk %" value={`${trade.riskPercent}%`} />
-                              <DetailRow label="Psychology" value={trade.psychology} />
-                              <DetailRow label="Plan" value={trade.planExecution} />
-                              <DetailRow label="Confidence" value={trade.confidence} />
-                              <DetailRow label="Closed By" value={trade.closedBy} />
-                              <DetailRow label="Gain R:R" value={trade.gainRR?.toString()} />
-                              <DetailRow label="Gain %" value={`${trade.gainPercent}%`} />
+                      <tr key={`${trade.id}-exp`} className="bg-bg3/20">
+                        <td colSpan={9} className="px-5 py-4">
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+
+                            {/* Col 1: Stats grid */}
+                            <div className="grid grid-cols-2 gap-2 content-start">
+                              {[
+                                { l: 'Данс',       v: trade.account },
+                                { l: 'Лот',        v: trade.lotSize?.toString() },
+                                { l: 'Risk %',     v: trade.riskPercent ? `${trade.riskPercent}%` : undefined },
+                                { l: 'Хаасан',     v: trade.closedBy },
+                                { l: 'Gain R:R',   v: trade.gainRR?.toString() },
+                                { l: 'Gain %',     v: trade.gainPercent ? `${trade.gainPercent}%` : undefined },
+                              ].filter(x => x.v).map(x => (
+                                <div key={x.l} className="bg-bg3 rounded-lg px-3 py-2">
+                                  <div className="text-[10px] text-muted uppercase tracking-wider mb-0.5">{x.l}</div>
+                                  <div className="text-sm font-medium text-zinc-200">{x.v}</div>
+                                </div>
+                              ))}
+                              {/* Psychology badges */}
+                              <div className="col-span-2 flex flex-wrap gap-1.5 mt-1">
+                                {trade.psychology && <span className="text-[11px] bg-bg3 border border-border px-2 py-0.5 rounded-full text-zinc-300">{trade.psychology}</span>}
+                                {trade.planExecution && <span className="text-[11px] bg-bg3 border border-border px-2 py-0.5 rounded-full text-zinc-300">{trade.planExecution}</span>}
+                                {trade.confidence && <span className="text-[11px] bg-bg3 border border-border px-2 py-0.5 rounded-full text-zinc-300">{trade.confidence}</span>}
+                              </div>
+                            </div>
+
+                            {/* Col 2: Notes */}
+                            <div className="space-y-3">
                               {trade.entryDetails && (
-                                <div>
-                                  <span className="text-muted text-xs uppercase tracking-wider">Entry Details</span>
-                                  <p className="text-zinc-300 mt-1 text-sm leading-relaxed">{trade.entryDetails}</p>
+                                <div className="bg-bg3 rounded-lg p-3">
+                                  <div className="text-[10px] text-accent uppercase tracking-wider mb-1">Entry Details</div>
+                                  <p className="text-sm text-zinc-300 leading-relaxed">{trade.entryDetails}</p>
                                 </div>
                               )}
                               {trade.review && (
-                                <div>
-                                  <span className="text-muted text-xs uppercase tracking-wider">Review</span>
-                                  <p className="text-zinc-300 mt-1 text-sm leading-relaxed">{trade.review}</p>
+                                <div className="bg-bg3 rounded-lg p-3">
+                                  <div className="text-[10px] text-purple uppercase tracking-wider mb-1">Review</div>
+                                  <p className="text-sm text-zinc-300 leading-relaxed">{trade.review}</p>
                                 </div>
                               )}
                             </div>
 
-                            {/* Right: screenshots */}
-                            <div className="space-y-4">
+                            {/* Col 3: Screenshots */}
+                            <div className="space-y-3">
                               {trade.screenshotBefore?.length > 0 && (
                                 <div>
-                                  <span className="text-xs font-medium text-accent uppercase tracking-wider">Before</span>
-                                  <div className="flex gap-2 mt-2">
+                                  <div className="text-[10px] text-accent uppercase tracking-wider mb-1.5">Before</div>
+                                  <div className="flex gap-2">
                                     {trade.screenshotBefore.map((img, i) => (
-                                      <img
-                                        key={i}
-                                        src={img}
-                                        alt={`before ${i+1}`}
-                                        className="w-32 h-20 object-cover rounded-lg border border-accent/30 cursor-pointer hover:border-accent transition-all"
-                                        onClick={() => setLightbox(img)}
-                                      />
+                                      <img key={i} src={img} alt={`before ${i+1}`}
+                                        className="flex-1 h-24 object-cover rounded-lg border border-accent/20 cursor-pointer hover:border-accent transition-all"
+                                        onClick={() => setLightbox(img)} />
                                     ))}
                                   </div>
                                 </div>
                               )}
                               {trade.screenshotAfter?.length > 0 && (
                                 <div>
-                                  <span className="text-xs font-medium text-purple uppercase tracking-wider">After</span>
-                                  <div className="flex gap-2 mt-2">
+                                  <div className="text-[10px] text-purple uppercase tracking-wider mb-1.5">After</div>
+                                  <div className="flex gap-2">
                                     {trade.screenshotAfter.map((img, i) => (
-                                      <img
-                                        key={i}
-                                        src={img}
-                                        alt={`after ${i+1}`}
-                                        className="w-32 h-20 object-cover rounded-lg border border-purple/30 cursor-pointer hover:border-purple transition-all"
-                                        onClick={() => setLightbox(img)}
-                                      />
+                                      <img key={i} src={img} alt={`after ${i+1}`}
+                                        className="flex-1 h-24 object-cover rounded-lg border border-purple/20 cursor-pointer hover:border-purple transition-all"
+                                        onClick={() => setLightbox(img)} />
                                     ))}
                                   </div>
                                 </div>
                               )}
                             </div>
+
                           </div>
                         </td>
                       </tr>
