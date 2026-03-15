@@ -1,11 +1,11 @@
 // src/pages/CalendarPage.tsx
-import React, { useState, useMemo } from 'react'
+import { useState, useMemo } from 'react'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import type { Trade } from '../types'
 import clsx from 'clsx'
 
 const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December']
-const DAYS   = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun']
+const DAYS   = ['Да','Мя','Лх','Пү','Ба','Бя','Ня']
 
 interface Props { trades: Trade[]; onAdd: () => void }
 
@@ -49,138 +49,175 @@ export default function CalendarPage({ trades, onAdd }: Props) {
   const rem = (7 - cells.length % 7) % 7
   for (let d = 1; d <= rem; d++) cells.push({ day: d, date: '', cur: false })
 
+  const fmtDate = (ds: string) => {
+    const d = new Date(ds + 'T00:00:00')
+    return d.toLocaleDateString('mn-MN', { month: 'long', day: 'numeric', weekday: 'long' })
+  }
+
   return (
-    <div className="fade-in">
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-xl font-bold text-zinc-100 tracking-tight">Calendar</h1>
-          <p className="text-sm text-muted mt-0.5">Daily P&L view</p>
-        </div>
-        <button onClick={onAdd} className="btn-primary">+ Log Trade</button>
-      </div>
-
-      {/* Month stats */}
-      <div className="grid grid-cols-4 gap-3 mb-5">
-        {[
-          { label:'Trades',        val: mTrades.length,                                                color:'#00e5ff' },
-          { label:'Green days',    val: winDays,                                                       color:'#22c55e' },
-          { label:'Red days',      val: lossDays,                                                      color:'#ef4444' },
-          { label:'Month P&L',     val: (mPL>=0?'+':'')+'$'+Math.abs(mPL).toFixed(0),                 color: mPL>=0?'#22c55e':'#ef4444' },
-        ].map(s => (
-          <div key={s.label} className="card p-4 relative overflow-hidden">
-            <div className="stat-border" style={{ background: s.color }}/>
-            <div className="text-[10px] font-semibold text-muted uppercase tracking-wider">{s.label}</div>
-            <div className="text-2xl font-bold mt-1.5" style={{ color: s.color }}>{s.val}</div>
-          </div>
-        ))}
-      </div>
-
-      {/* Calendar grid */}
-      <div className="card p-5">
-        <div className="flex items-center justify-between mb-5">
-          <div className="font-semibold text-zinc-200">{MONTHS[mo]} {yr}</div>
-          <div className="flex items-center gap-1.5">
-            <button onClick={() => nav(-1)} className="btn-icon"><ChevronLeft size={13}/></button>
-            <button onClick={() => { setYr(now.getFullYear()); setMo(now.getMonth()) }} className="btn-ghost px-3 py-1.5 text-xs">Today</button>
-            <button onClick={() => nav(1)}  className="btn-icon"><ChevronRight size={13}/></button>
-          </div>
-        </div>
-
-        {/* Day headers */}
-        <div className="grid grid-cols-7 gap-1 mb-1">
-          {DAYS.map(d => <div key={d} className="text-center text-[9.5px] font-semibold text-muted uppercase tracking-wider py-1">{d}</div>)}
-        </div>
-
-        {/* Cells */}
-        <div className="grid grid-cols-7 gap-1">
-          {cells.map((c, i) => {
-            if (!c.cur) return (
-              <div key={i} className="min-h-[72px] rounded-lg bg-bg3/40 border border-border/50 opacity-30 p-1.5">
-                <div className="text-[10px] text-muted">{c.day}</div>
-              </div>
-            )
-
-            const dt  = dayMap[c.date] || []
-            const pl  = dt.reduce((s,t) => s + t.pnl, 0)
-            const isT = c.date === today
-
-            return (
-              <div key={i}
-                onClick={() => dt.length && setPopup({ date: c.date, trades: dt })}
-                className={clsx(
-                  'min-h-[72px] rounded-lg border p-1.5 transition-all',
-                  dt.length && pl > 0  ? 'border-green/25 bg-green/3'  : '',
-                  dt.length && pl < 0  ? 'border-red/25  bg-red/3'     : '',
-                  dt.length && pl === 0 && dt.length ? 'border-yellow/25 bg-yellow/3' : '',
-                  !dt.length           ? 'border-border bg-bg/50'      : '',
-                  dt.length            ? 'cursor-pointer hover:brightness-110' : '',
-                  isT                  ? 'ring-1 ring-accent/40'       : '',
-                )}>
-                <div className={clsx('text-[10px] font-semibold mb-1', isT ? 'text-accent' : 'text-muted')}>{c.day}</div>
-                {dt.slice(0, 2).map((t, j) => (
-                  <div key={j} className={clsx('text-[9px] font-mono px-1 py-0.5 rounded mb-0.5 truncate',
-                    t.result==='Win'?'bg-green/10 text-green':t.result==='Loss'?'bg-red/10 text-red':'bg-yellow/10 text-yellow')}>
-                    {t.pair} {t.pnl>=0?'+':''}${t.pnl.toFixed(0)}
-                  </div>
-                ))}
-                {dt.length > 2 && <div className="text-[8.5px] text-muted">+{dt.length - 2} more</div>}
-                {dt.length > 0 && (
-                  <div className="mt-1 pt-1 border-t border-white/5">
-                    <div className={clsx('text-[9px] font-mono font-semibold', pl>=0?'text-green':'text-red')}>{pl>=0?'+':''}${pl.toFixed(2)}</div>
-                  </div>
-                )}
-              </div>
-            )
-          })}
-        </div>
-      </div>
-
-      {/* Day popup */}
+    <>
       {popup && (
-        <div className="fixed inset-0 bg-black/75 z-[500] flex items-center justify-center backdrop-blur-sm" onClick={() => setPopup(null)}>
-          <div className="card w-[360px] max-h-[75vh] overflow-y-auto p-5 fade-in" onClick={e => e.stopPropagation()}>
-            <div className="flex justify-between items-center mb-4">
-              <div className="font-semibold text-zinc-100">{popup.date}</div>
-              <button onClick={() => setPopup(null)} className="text-muted hover:text-zinc-300 text-xl transition-colors">×</button>
-            </div>
-            {/* Summary bar */}
-            <div className="flex gap-3 pb-3 mb-3 border-b border-border">
-              {(() => {
-                const pl  = popup.trades.reduce((s,t) => s+t.pnl, 0)
-                const wr  = ((popup.trades.filter(t=>t.result==='Win').length / popup.trades.length)*100).toFixed(0)
-                return [
-                  { l:'P&L',    v:(pl>=0?'+':'')+'$'+pl.toFixed(2), c:pl>=0?'text-green':'text-red' },
-                  { l:'Trades', v:String(popup.trades.length),       c:'text-zinc-200' },
-                  { l:'Win %',  v:wr+'%',                            c:'text-green' },
-                ].map(s => (
-                  <div key={s.l} className="flex-1 text-center">
-                    <div className={`font-mono text-sm font-semibold ${s.c}`}>{s.v}</div>
-                    <div className="text-[9.5px] text-muted mt-0.5">{s.l}</div>
-                  </div>
-                ))
-              })()}
-            </div>
-            {/* Trades */}
-            {popup.trades.map(t => (
-              <div key={t.id} className={clsx('bg-bg3 border-l-2 rounded-lg p-3 mb-2',
-                t.result==='Win'?'border-green':t.result==='Loss'?'border-red':'border-yellow')}>
-                <div className="flex justify-between mb-1">
-                  <span className="font-semibold text-sm text-zinc-100">{t.pair}</span>
-                  <span className={clsx('font-mono text-sm font-semibold', t.pnl>=0?'text-green':'text-red')}>{t.pnl>=0?'+':''}${t.pnl.toFixed(2)}</span>
-                </div>
-                <div className="flex gap-1.5 flex-wrap">
-                  <span className={t.direction==='buy'?'badge-buy':'badge-sell'}>{t.direction}</span>
-                  <span className={t.result==='Win'?'badge-win':t.result==='Loss'?'badge-loss':'badge-be'}>{t.result}</span>
-                  <span className="text-[10px] text-muted self-center">{t.session}</span>
-                  <span className="text-[10px] text-muted self-center">{t.psychology}</span>
-                </div>
-                {t.screenshotBefore?.[0] && <img src={t.screenshotBefore[0]} className="w-full rounded mt-2 max-h-28 object-cover" alt="chart"/>}
-                {t.review && <p className="text-[11px] text-muted mt-1.5 leading-relaxed">{t.review}</p>}
+        <div className="fixed inset-0 bg-black/80 z-[500] flex items-center justify-center backdrop-blur-sm p-4" onClick={() => setPopup(null)}>
+          <div className="bg-bg2 border border-border rounded-2xl w-full max-w-[420px] max-h-[80vh] overflow-y-auto shadow-2xl" onClick={e => e.stopPropagation()}>
+            {/* Popup header */}
+            <div className="flex justify-between items-start p-5 border-b border-border">
+              <div>
+                <div className="text-xs text-muted mb-0.5">Арилжааны жагсаалт</div>
+                <div className="font-semibold text-zinc-100">{fmtDate(popup.date)}</div>
               </div>
-            ))}
+              <button onClick={() => setPopup(null)} className="w-7 h-7 rounded-full bg-bg3 flex items-center justify-center text-muted hover:text-zinc-200 transition-colors text-base">×</button>
+            </div>
+            {/* Day summary */}
+            {(() => {
+              const pl  = popup.trades.reduce((s,t) => s+t.pnl, 0)
+              const wins = popup.trades.filter(t=>t.result==='Win').length
+              const wr  = Math.round((wins / popup.trades.length) * 100)
+              return (
+                <div className="grid grid-cols-3 divide-x divide-border border-b border-border">
+                  {[
+                    { l: 'Нийт PNL',  v: (pl>=0?'+':'')+'$'+pl.toFixed(2), c: pl>=0 ? 'text-green' : 'text-red' },
+                    { l: 'Арилжаа',   v: String(popup.trades.length),        c: 'text-zinc-100' },
+                    { l: 'Win Rate',  v: wr+'%',                             c: 'text-green' },
+                  ].map(s => (
+                    <div key={s.l} className="py-3 text-center">
+                      <div className={`text-base font-bold font-mono ${s.c}`}>{s.v}</div>
+                      <div className="text-[10px] text-muted mt-0.5">{s.l}</div>
+                    </div>
+                  ))}
+                </div>
+              )
+            })()}
+            {/* Trade list */}
+            <div className="p-4 space-y-2">
+              {popup.trades.map(t => (
+                <div key={t.id} className={clsx(
+                  'rounded-xl border p-3.5',
+                  t.result==='Win'  ? 'border-green/30 bg-green/5'  :
+                  t.result==='Loss' ? 'border-red/30   bg-red/5'    :
+                                      'border-yellow/30 bg-yellow/5'
+                )}>
+                  <div className="flex justify-between items-start mb-2">
+                    <div>
+                      <span className="font-bold text-sm text-zinc-100">{t.pair}</span>
+                      {t.account && <span className="ml-2 text-[10px] text-muted">{t.account}</span>}
+                    </div>
+                    <span className={clsx('font-mono font-bold text-sm', t.pnl>=0?'text-green':'text-red')}>
+                      {t.pnl>=0?'+':''}${t.pnl.toFixed(2)}
+                    </span>
+                  </div>
+                  <div className="flex gap-1.5 flex-wrap">
+                    <span className={t.direction==='buy'?'badge-buy':'badge-sell'}>{t.direction}</span>
+                    <span className={t.result==='Win'?'badge-win':t.result==='Loss'?'badge-loss':'badge-be'}>{t.result}</span>
+                    {t.rrRatio && <span className="text-[10px] bg-bg3 text-muted px-1.5 py-0.5 rounded">{t.rrRatio}</span>}
+                    <span className="text-[10px] text-muted self-center">{t.session}</span>
+                  </div>
+                  {t.screenshotBefore?.[0] && (
+                    <img src={t.screenshotBefore[0]} className="w-full rounded-lg mt-2.5 max-h-32 object-cover" alt="chart"/>
+                  )}
+                  {t.review && <p className="text-[11px] text-muted mt-2 leading-relaxed">{t.review}</p>}
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       )}
-    </div>
+
+      <div className="p-6 fade-in">
+        {/* Page header */}
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h1 className="text-xl font-bold text-zinc-100 tracking-tight">Calendar</h1>
+            <p className="text-sm text-muted mt-0.5">Өдөр бүрийн PNL</p>
+          </div>
+          <button onClick={onAdd} className="btn-primary">+ Арилжаа нэмэх</button>
+        </div>
+
+        {/* Month stats */}
+        <div className="grid grid-cols-4 gap-3 mb-5">
+          {[
+            { label: 'Нийт арилжаа', val: mTrades.length,                                    color: '#00e5ff' },
+            { label: 'Ногоон өдөр',  val: winDays,                                           color: '#22c55e' },
+            { label: 'Улаан өдөр',   val: lossDays,                                          color: '#ef4444' },
+            { label: 'Сарын PNL',    val: (mPL>=0?'+':'')+'$'+Math.abs(mPL).toFixed(0),     color: mPL>=0?'#22c55e':'#ef4444' },
+          ].map(s => (
+            <div key={s.label} className="card p-4 relative overflow-hidden">
+              <div className="stat-border" style={{ background: s.color }}/>
+              <div className="text-[10px] font-semibold text-muted uppercase tracking-wider">{s.label}</div>
+              <div className="text-2xl font-bold mt-1.5" style={{ color: s.color }}>{s.val}</div>
+            </div>
+          ))}
+        </div>
+
+        {/* Calendar card */}
+        <div className="card p-5">
+          {/* Month nav */}
+          <div className="flex items-center justify-between mb-5">
+            <div className="text-base font-semibold text-zinc-100">{MONTHS[mo]} {yr}</div>
+            <div className="flex items-center gap-1.5">
+              <button onClick={() => nav(-1)} className="btn-icon"><ChevronLeft size={14}/></button>
+              <button onClick={() => { setYr(now.getFullYear()); setMo(now.getMonth()) }} className="btn-ghost px-3 py-1.5 text-xs">Өнөөдөр</button>
+              <button onClick={() => nav(1)}  className="btn-icon"><ChevronRight size={14}/></button>
+            </div>
+          </div>
+
+          {/* Day headers */}
+          <div className="grid grid-cols-7 gap-1.5 mb-1.5">
+            {DAYS.map(d => (
+              <div key={d} className="text-center text-[10px] font-semibold text-muted uppercase tracking-widest py-1">{d}</div>
+            ))}
+          </div>
+
+          {/* Cells */}
+          <div className="grid grid-cols-7 gap-1.5">
+            {cells.map((c, i) => {
+              if (!c.cur) return (
+                <div key={i} className="h-[88px] rounded-xl bg-bg3/30 border border-border/30 opacity-25 p-2">
+                  <div className="text-[11px] text-muted">{c.day}</div>
+                </div>
+              )
+
+              const dt  = dayMap[c.date] || []
+              const pl  = dt.reduce((s,t) => s + t.pnl, 0)
+              const isT = c.date === today
+              const hasT = dt.length > 0
+
+              return (
+                <div key={i}
+                  onClick={() => hasT && setPopup({ date: c.date, trades: dt })}
+                  className={clsx(
+                    'h-[88px] rounded-xl border p-2 flex flex-col transition-all duration-150',
+                    hasT && pl > 0  ? 'border-green/30 bg-green/8  hover:bg-green/14  cursor-pointer' : '',
+                    hasT && pl < 0  ? 'border-red/30   bg-red/8    hover:bg-red/14    cursor-pointer' : '',
+                    hasT && pl === 0 ? 'border-yellow/30 bg-yellow/8 hover:bg-yellow/14 cursor-pointer' : '',
+                    !hasT           ? 'border-border/50 bg-bg/40' : '',
+                    isT             ? 'ring-1 ring-accent/50' : '',
+                  )}>
+                  {/* Day number */}
+                  <div className={clsx(
+                    'text-[11px] font-semibold w-5 h-5 flex items-center justify-center rounded-full mb-1',
+                    isT ? 'bg-accent text-black' : 'text-muted'
+                  )}>{c.day}</div>
+
+                  {/* PNL */}
+                  {hasT ? (
+                    <div className="flex-1 flex flex-col items-center justify-center">
+                      <div className={clsx(
+                        'text-[15px] font-bold font-mono leading-none',
+                        pl > 0 ? 'text-green' : pl < 0 ? 'text-red' : 'text-yellow'
+                      )}>
+                        {pl >= 0 ? '+' : ''}${Math.abs(pl) >= 1000 ? (pl/1000).toFixed(1)+'k' : pl.toFixed(0)}
+                      </div>
+                      <div className="text-[9px] text-muted mt-1">{dt.length} арилжаа</div>
+                    </div>
+                  ) : (
+                    <div className="flex-1" />
+                  )}
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      </div>
+    </>
   )
 }
