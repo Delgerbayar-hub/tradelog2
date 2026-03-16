@@ -523,7 +523,7 @@ const btnPrimary = (color: 'cyan' | 'purple') =>
     ? 'px-6 py-2 rounded-xl bg-accent text-black font-semibold text-sm hover:opacity-90 transition-all'
     : 'px-6 py-2 rounded-xl bg-purple text-white font-semibold text-sm hover:opacity-90 transition-all';
 
-function NumericInput({ value, onChange, step, min }: {
+function NumericInput({ value, onChange, step: _step, min }: {
   value: number;
   onChange: (v: number) => void;
   step: number;
@@ -532,25 +532,29 @@ function NumericInput({ value, onChange, step, min }: {
   const [display, setDisplay] = useState(String(value));
 
   useEffect(() => {
-    if (parseFloat(display) !== value) setDisplay(String(value));
+    const n = parseFloat(display);
+    if (n !== value) setDisplay(value === 0 ? '0' : String(value));
   }, [value]);
 
   return (
     <input
-      type="number"
-      step={step}
-      min={min}
+      type="text"
+      inputMode="decimal"
       value={display}
       onChange={e => {
-        setDisplay(e.target.value);
-        const n = parseFloat(e.target.value);
-        if (!isNaN(n)) onChange(n);
+        const raw = e.target.value;
+        // Allow: digits, one dot, leading minus
+        if (raw === '' || raw === '-' || /^-?\d*\.?\d*$/.test(raw)) {
+          setDisplay(raw);
+          const n = parseFloat(raw);
+          if (!isNaN(n)) onChange(n);
+        }
       }}
       onBlur={() => {
         const n = parseFloat(display);
         const safe = isNaN(n)
-          ? (min ?? 0)
-          : min !== undefined && n < min ? min : n;
+          ? (min !== undefined && isFinite(min) ? min : 0)
+          : min !== undefined && isFinite(min) && n < min ? min : n;
         onChange(safe);
         setDisplay(String(safe));
       }}

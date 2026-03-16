@@ -151,13 +151,13 @@ export default function DashboardPage({ trades, userSettings, onAdd }: Props) {
           },
           {
             label: 'Best Trade', icon: Trophy, iconColor: '#22c55e', bg: 'rgba(34,197,94,0.1)',
-            val: <span className="text-2xl font-bold text-green">{st.best ? `+$${st.best.pnl.toFixed(2)}` : '—'}</span>,
-            sub: st.best ? `${st.best.pair} · ${st.best.date}` : null,
+            val: <span className="text-2xl font-bold text-green">{st.best && st.best.pnl > 0 ? `+$${st.best.pnl.toFixed(2)}` : '—'}</span>,
+            sub: st.best && st.best.pnl > 0 ? `${st.best.pair} · ${st.best.date}` : null,
           },
           {
             label: 'Worst Trade', icon: AlertTriangle, iconColor: '#ef4444', bg: 'rgba(239,68,68,0.1)',
-            val: <span className="text-2xl font-bold text-red">{st.worst ? `$${st.worst.pnl.toFixed(2)}` : '—'}</span>,
-            sub: st.worst ? `${st.worst.pair} · ${st.worst.date}` : null,
+            val: <span className="text-2xl font-bold text-red">{st.worst && st.worst.pnl < 0 ? `-$${Math.abs(st.worst.pnl).toFixed(2)}` : '—'}</span>,
+            sub: st.worst && st.worst.pnl < 0 ? `${st.worst.pair} · ${st.worst.date}` : null,
           },
         ].map(({ label, icon: Icon, iconColor, bg, val, sub }) => (
           <div key={label} className="card p-5 flex items-center gap-4">
