@@ -14,7 +14,7 @@ const ChartTooltip = ({ active, payload, label }: any) => active && payload?.len
 ) : null
 
 export default function DashboardPage({ trades, userSettings, onAdd }: Props) {
-  const accounts = userSettings?.accounts ?? []
+  const accounts = (userSettings?.accounts ?? []).filter(a => a.active !== false)
   const [selectedAccount, setSelectedAccount] = useState<string>('All')
 
   const filteredTrades = useMemo(() =>

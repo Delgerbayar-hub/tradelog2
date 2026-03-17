@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { useAuth } from './context/AuthContext';
 import { useFirestore } from './hooks/useFirestore';
-import { LayoutDashboard, List, Calendar, User, LogOut, ChevronLeft, ChevronRight } from 'lucide-react';
+import { LayoutDashboard, List, Calendar, LogOut, ChevronLeft, ChevronRight } from 'lucide-react';
 
 import TradesPage from './pages/TradesPage';
 import DashboardPage from './pages/DashboardPage';
@@ -130,7 +130,7 @@ export default function App() {
             onModalClose={() => setOpenModal(false)}
           />
         ) : page === 'calendar' ? (
-          <CalendarPage trades={trades} onAdd={() => { setPage('trades'); setOpenModal(true); }} />
+          <CalendarPage trades={trades} onAdd={() => { setPage('trades'); setOpenModal(true); }} userSettings={userSettings} />
         ) : (
           <ProfilePage
             user={user}

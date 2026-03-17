@@ -1,7 +1,7 @@
 // src/pages/ProfilePage.tsx
 import { useState, useRef } from 'react';
 import { User, updateProfile } from 'firebase/auth';
-import { Plus, Trash2, Target, X, Pencil, Check, Camera, Quote, TrendingUp, TrendingDown, BarChart2, Wallet, ChevronRight } from 'lucide-react';
+import { Plus, PowerOff, Power, Target, X, Pencil, Check, Camera, Quote, TrendingUp, TrendingDown, BarChart2, Wallet, ChevronRight } from 'lucide-react';
 import { Trade, TradingAccount, UserSettings } from '../types';
 import { auth } from '../lib/firebase';
 
@@ -117,8 +117,9 @@ export default function ProfilePage({ user, userSettings, trades, onUpdateSettin
   const accounts = userSettings?.accounts ?? [];
   const pairs    = userSettings?.pairs ?? DEFAULT_PAIRS;
 
-  const [showAddAccount, setShowAddAccount] = useState(false);
-  const [showAddPair,    setShowAddPair]    = useState(false);
+  const [showAddAccount,    setShowAddAccount]    = useState(false);
+  const [showAddPair,       setShowAddPair]       = useState(false);
+  const [accountFilter, setAccountFilter] = useState<'active' | 'inactive'>('active');
   const [editing, setEditing] = useState(false);
   const [saving,  setSaving]  = useState(false);
 
@@ -165,10 +166,9 @@ export default function ProfilePage({ user, userSettings, trades, onUpdateSettin
 
   const Avatar = ({ src, name, size }: { src?: string | null; name: string; size: string }) =>
     src ? (
-      <img src={src} className={`${size} rounded-2xl object-cover ring-4 ring-card shadow-2xl`} alt="avatar" />
+      <img src={src} className={`${size} rounded-full object-cover ring-4 ring-card shadow-2xl shrink-0`} alt="avatar" />
     ) : (
-      <div className={`${size} rounded-2xl bg-gradient-to-br from-accent/30 to-purple/20 flex items-center justify-center text-accent font-bold ring-4 ring-card shadow-2xl`}
-        style={{ fontSize: parseInt(size.replace(/\D/g, '')) * 0.35 }}>
+      <div className={`${size} rounded-full bg-bg3 border border-border2 flex items-center justify-center text-accent font-bold text-2xl ring-4 ring-card shadow-2xl shrink-0`}>
         {name[0]?.toUpperCase() ?? '?'}
       </div>
     );
@@ -331,11 +331,25 @@ export default function ProfilePage({ user, userSettings, trades, onUpdateSettin
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-white font-semibold text-[15px]">Арилжааны Данснууд</h2>
-              <p className="text-muted text-xs mt-0.5">{accounts.length ? `${accounts.length} данс идэвхтэй` : 'Данс байхгүй'}</p>
+              <p className="text-muted text-xs mt-0.5">
+                {accounts.filter(a => a.active !== false).length} идэвхтэй
+                {accounts.some(a => a.active === false) && ` · ${accounts.filter(a => a.active === false).length} идэвхгүй`}
+              </p>
             </div>
-            <button onClick={() => setShowAddAccount(true)} className="btn-primary text-xs px-3 py-1.5">
-              <Plus size={13} /> Данс нэмэх
-            </button>
+            <div className="flex items-center gap-2">
+              <div className="flex rounded-lg border border-border overflow-hidden text-xs">
+                {(['active', 'inactive'] as const).map(f => (
+                  <button key={f}
+                    onClick={() => setAccountFilter(f)}
+                    className={`px-3 py-1.5 transition-colors ${accountFilter === f ? 'bg-accent/15 text-accent' : 'text-muted hover:text-zinc-300'}`}>
+                    {f === 'active' ? 'Идэвхтэй' : 'Идэвхгүй'}
+                  </button>
+                ))}
+              </div>
+              <button onClick={() => setShowAddAccount(true)} className="btn-primary text-xs px-3 py-1.5">
+                <Plus size={13} /> Данс нэмэх
+              </button>
+            </div>
           </div>
 
           {accounts.length === 0 && (
@@ -354,7 +368,8 @@ export default function ProfilePage({ user, userSettings, trades, onUpdateSettin
             </div>
           )}
 
-          {accounts.map(acc => {
+          {accounts.filter(a => accountFilter === 'active' ? a.active !== false : a.active === false).map(acc => {
+            const isActive  = acc.active !== false;
             const accTrades = trades.filter(t => t.account === acc.name);
             const pnl       = accTrades.reduce((s, t) => s + (t.pnl || 0), 0);
             const current   = acc.balance + pnl;
@@ -365,8 +380,14 @@ export default function ProfilePage({ user, userSettings, trades, onUpdateSettin
               : 0;
             const isUp = pnl >= 0;
 
+            const toggleActive = () => {
+              onUpdateSettings({
+                accounts: accounts.map(a => a.name === acc.name ? { ...a, active: !isActive } : a)
+              });
+            };
+
             return (
-              <div key={acc.name} className="card overflow-hidden group hover:border-border2 transition-colors">
+              <div key={acc.name} className={`card overflow-hidden group hover:border-border2 transition-all ${!isActive ? 'opacity-50' : ''}`}>
                 {/* Color top bar */}
                 <div className="h-[3px]" style={{ background: isUp ? 'linear-gradient(90deg,#22c55e,#00e5ff)' : 'linear-gradient(90deg,#ef4444,#f97316)' }} />
 
@@ -384,14 +405,20 @@ export default function ProfilePage({ user, userSettings, trades, onUpdateSettin
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
+                      {!isActive && (
+                        <span className="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-zinc-700/60 text-zinc-400 border border-zinc-600/50">
+                          Идэвхгүй
+                        </span>
+                      )}
                       <span className="text-xs font-mono font-semibold px-2 py-0.5 rounded-md"
                         style={{ color: isUp ? '#22c55e' : '#ef4444', background: isUp ? 'rgba(34,197,94,0.1)' : 'rgba(239,68,68,0.1)' }}>
                         {isUp ? '+' : ''}${pnl.toFixed(0)}
                       </span>
                       <button
-                        onClick={() => { if (confirm(`"${acc.name}" дансыг устгах уу?`)) onUpdateSettings({ accounts: accounts.filter(a => a.name !== acc.name) }); }}
-                        className="text-border2 hover:text-red transition-colors opacity-0 group-hover:opacity-100 p-1.5 rounded-lg hover:bg-red/10">
-                        <Trash2 size={13} />
+                        onClick={toggleActive}
+                        title={isActive ? 'Идэвхгүй болгох' : 'Идэвхжүүлэх'}
+                        className={`transition-colors opacity-0 group-hover:opacity-100 p-1.5 rounded-lg ${isActive ? 'text-border2 hover:text-red hover:bg-red/10' : 'text-green hover:bg-green/10'}`}>
+                        {isActive ? <PowerOff size={13} /> : <Power size={13} />}
                       </button>
                     </div>
                   </div>

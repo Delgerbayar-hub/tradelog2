@@ -23,11 +23,12 @@ const CONFIDENCE = ['Бага','Дунд','Өндөр'] as const;
 type Step = 'entry' | 'exit';
 
 export default function TradeModal({ isOpen, onClose, onSave, editTrade, userSettings }: TradeModalProps) {
-  const pairs = userSettings?.pairs?.length ? userSettings.pairs : DEFAULT_PAIRS;
+  const pairs           = userSettings?.pairs?.length ? userSettings.pairs : DEFAULT_PAIRS;
+  const activeAccounts  = (userSettings?.accounts ?? []).filter(a => a.active !== false);
 
   const emptyEntry = {
     date: new Date().toISOString().slice(0, 10),
-    account: userSettings?.accounts?.[0]?.name || '',
+    account: activeAccounts[0]?.name || '',
     pair: pairs[0],
     direction: 'buy' as const,
     lotSize: 0.01,
@@ -196,11 +197,11 @@ export default function TradeModal({ isOpen, onClose, onSave, editTrade, userSet
                     />
                   </Field>
                   <Field label="Account">
-                    {userSettings?.accounts?.length ? (
+                    {activeAccounts.length ? (
                       <Select
                         value={form.account}
                         onChange={v => set('account', v)}
-                        options={userSettings.accounts.map(a => a.name)}
+                        options={activeAccounts.map(a => a.name)}
                       />
                     ) : (
                       <input
@@ -617,31 +618,36 @@ function ImageUploader({
   const accent = accentColor === 'cyan' ? 'border-accent/50 hover:border-accent' : 'border-purple/50 hover:border-purple';
   const labelAccent = accentColor === 'cyan' ? 'text-accent' : 'text-purple';
 
+  const validImages = images.filter(Boolean);
   return (
-    <div className="flex gap-3">
-      {images.map((img, idx) => (
-        <div key={idx} className="relative group w-24 h-16 rounded-lg overflow-hidden border border-border2">
-          <img
-            src={img}
-            alt={`screenshot ${idx + 1}`}
-            className="w-full h-full object-cover cursor-pointer"
-            onClick={() => onLightbox(img)}
-          />
-          <button
-            onClick={() => onRemove(idx)}
-            className="absolute top-1 right-1 bg-black/70 rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity"
-          >
-            <X size={10} className="text-white" />
-          </button>
+    <div className="space-y-2">
+      {validImages.length > 0 && (
+        <div className="flex gap-2">
+          {validImages.map((img, idx) => (
+            <div key={idx} className="relative group w-28 h-20 rounded-lg overflow-hidden border border-border2">
+              <img
+                src={img}
+                alt={`screenshot ${idx + 1}`}
+                className="w-full h-full object-cover cursor-pointer"
+                onClick={() => onLightbox(img)}
+              />
+              <button
+                onClick={() => onRemove(idx)}
+                className="absolute top-1 right-1 bg-black/70 rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity"
+              >
+                <X size={10} className="text-white" />
+              </button>
+            </div>
+          ))}
         </div>
-      ))}
-      {images.length < 2 && (
+      )}
+      {validImages.length < 2 && (
         <button
           onClick={() => inputRef.current?.click()}
-          className={`w-24 h-16 rounded-lg border-2 border-dashed ${accent} flex flex-col items-center justify-center gap-1 transition-colors`}
+          className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border ${accent} text-xs transition-colors ${labelAccent}`}
         >
-          <Upload size={14} className={labelAccent} />
-          <span className={`text-xs ${labelAccent}`}>Зураг</span>
+          <Upload size={12} />
+          {validImages.length === 0 ? 'Зураг нэмэх' : 'Нэг зураг нэмэх'}
         </button>
       )}
       <input

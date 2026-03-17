@@ -1,28 +1,34 @@
 // src/pages/CalendarPage.tsx
 import { useState, useMemo } from 'react'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
-import type { Trade } from '../types'
+import type { Trade, UserSettings } from '../types'
 import clsx from 'clsx'
 
 const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December']
 const DAYS   = ['Да','Мя','Лх','Пү','Ба','Бя','Ня']
 
-interface Props { trades: Trade[]; onAdd: () => void }
+interface Props { trades: Trade[]; onAdd: () => void; userSettings?: UserSettings | null }
 
-export default function CalendarPage({ trades, onAdd }: Props) {
+export default function CalendarPage({ trades, onAdd, userSettings }: Props) {
+  const accounts = (userSettings?.accounts ?? []).filter(a => a.active !== false)
   const now = new Date()
   const [yr, setYr] = useState(now.getFullYear())
   const [mo, setMo] = useState(now.getMonth())
   const [popup, setPopup] = useState<{ date: string; trades: Trade[] } | null>(null)
+  const [selectedAccount, setSelectedAccount] = useState<string>('All')
+
+  const filteredTrades = useMemo(() =>
+    selectedAccount === 'All' ? trades : trades.filter(t => t.account === selectedAccount)
+  , [trades, selectedAccount])
 
   const dayMap = useMemo(() => {
     const m: Record<string, Trade[]> = {}
-    trades.forEach(t => { if (!m[t.date]) m[t.date] = []; m[t.date].push(t) })
+    filteredTrades.forEach(t => { if (!m[t.date]) m[t.date] = []; m[t.date].push(t) })
     return m
-  }, [trades])
+  }, [filteredTrades])
 
   const prefix   = `${yr}-${String(mo + 1).padStart(2,'0')}`
-  const mTrades  = trades.filter(t => t.date.startsWith(prefix))
+  const mTrades  = filteredTrades.filter(t => t.date.startsWith(prefix))
   const mPL      = mTrades.reduce((s,t) => s + t.pnl, 0)
   const mDays    = [...new Set(mTrades.map(t => t.date))]
   const winDays  = mDays.filter(d => (dayMap[d]||[]).reduce((s,t) => s+t.pnl,0) > 0).length
@@ -111,7 +117,7 @@ export default function CalendarPage({ trades, onAdd }: Props) {
                     {t.rrRatio && <span className="text-[10px] bg-bg3 text-muted px-1.5 py-0.5 rounded">{t.rrRatio}</span>}
                     <span className="text-[10px] text-muted self-center">{t.session}</span>
                   </div>
-                  {t.screenshotBefore?.[0] && (
+                  {t.screenshotBefore?.[0]?.trim() && (
                     <img src={t.screenshotBefore[0]} className="w-full rounded-lg mt-2.5 max-h-32 object-cover" alt="chart"/>
                   )}
                   {t.review && <p className="text-[11px] text-muted mt-2 leading-relaxed">{t.review}</p>}
@@ -129,7 +135,25 @@ export default function CalendarPage({ trades, onAdd }: Props) {
             <h1 className="text-xl font-bold text-zinc-100 tracking-tight">Calendar</h1>
             <p className="text-sm text-muted mt-0.5">Өдөр бүрийн PNL</p>
           </div>
-          <button onClick={onAdd} className="btn-primary">Арилжаа бүртгэх+</button>
+          <div className="flex items-center gap-2">
+            {accounts.length > 0 && (
+              <div className="flex items-center gap-1 bg-bg2 border border-border rounded-xl p-1">
+                <button
+                  onClick={() => setSelectedAccount('All')}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${selectedAccount === 'All' ? 'bg-bg3 text-zinc-100 border border-border2' : 'text-muted hover:text-zinc-300'}`}>
+                  Бүгд
+                </button>
+                {accounts.map(a => (
+                  <button key={a.name}
+                    onClick={() => setSelectedAccount(a.name)}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${selectedAccount === a.name ? 'bg-accent/15 text-accent border border-accent/30' : 'text-muted hover:text-zinc-300'}`}>
+                    {a.name}
+                  </button>
+                ))}
+              </div>
+            )}
+            <button onClick={onAdd} className="btn-primary">Арилжаа бүртгэх+</button>
+          </div>
         </div>
 
         {/* Month stats */}

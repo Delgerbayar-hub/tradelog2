@@ -59,6 +59,7 @@ export interface TradingAccount {
   name: string;
   balance: number;   // starting balance
   goal: number;      // target balance
+  active?: boolean;  // false = идэвхгүй (устгасан биш)
 }
 
 export interface UserSettings {
