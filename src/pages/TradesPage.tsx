@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { Trade, UserSettings } from '../types';
 import TradeModal from '../components/TradeModal';
+import { getActiveAccounts, getArchivedNames } from '../lib/accounts';
 
 interface TradesPageProps {
   trades: Trade[];
@@ -36,9 +37,12 @@ export default function TradesPage({
   const [filterAccount, setFilterAccount] = useState<string>('All');
   const [lightbox, setLightbox] = useState<string | null>(null);
 
-  const accounts = userSettings?.accounts ?? [];
+  const allAccounts = userSettings?.accounts ?? [];
+  const accounts    = getActiveAccounts(allAccounts);
+  const archived    = getArchivedNames(allAccounts);
 
   const filtered = trades.filter(t => {
+    if (archived.has(t.account)) return false;
     const matchSearch =
       t.pair.toLowerCase().includes(search.toLowerCase()) ||
       t.setup?.toLowerCase().includes(search.toLowerCase()) ||

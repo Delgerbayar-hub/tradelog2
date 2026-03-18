@@ -1,8 +1,8 @@
 // src/pages/ProfilePage.tsx
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { User, updateProfile } from 'firebase/auth';
-import { Plus, PowerOff, Power, Target, X, Pencil, Check, Camera, Quote, TrendingUp, TrendingDown, BarChart2, Wallet, ChevronRight } from 'lucide-react';
-import { Trade, TradingAccount, UserSettings, AccountType } from '../types';
+import { Plus, Target, X, Pencil, Check, Camera, Quote, TrendingUp, TrendingDown, BarChart2, Wallet, ChevronRight, MoreHorizontal, Zap, ZapOff, Archive } from 'lucide-react';
+import { Trade, TradingAccount, UserSettings, AccountType, AccountStatus } from '../types';
 import { fmtPnl, fmtBalance } from '../lib/format';
 import { auth } from '../lib/firebase';
 
@@ -144,7 +144,16 @@ export default function ProfilePage({ user, userSettings, trades, onUpdateSettin
 
   const [showAddAccount,    setShowAddAccount]    = useState(false);
   const [showAddPair,       setShowAddPair]       = useState(false);
-  const [accountFilter, setAccountFilter] = useState<'active' | 'inactive'>('active');
+  const [accountFilter, setAccountFilter] = useState<AccountStatus>('active');
+  const [openMenuName, setOpenMenuName] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!openMenuName) return;
+    const close = () => setOpenMenuName(null);
+    window.addEventListener('click', close);
+    return () => window.removeEventListener('click', close);
+  }, [openMenuName]);
+
   const [editing, setEditing] = useState(false);
   const [saving,  setSaving]  = useState(false);
 
@@ -363,11 +372,10 @@ export default function ProfilePage({ user, userSettings, trades, onUpdateSettin
             </div>
             <div className="flex items-center gap-2">
               <div className="flex rounded-lg border border-border overflow-hidden text-xs">
-                {(['active', 'inactive'] as const).map(f => (
-                  <button key={f}
-                    onClick={() => setAccountFilter(f)}
+                {([['active','Идэвхтэй'],['inactive','Идэвхгүй'],['archived','Архив']] as [AccountStatus,string][]).map(([f,label]) => (
+                  <button key={f} onClick={() => setAccountFilter(f)}
                     className={`px-3 py-1.5 transition-colors ${accountFilter === f ? 'bg-accent/15 text-accent' : 'text-muted hover:text-zinc-300'}`}>
-                    {f === 'active' ? 'Идэвхтэй' : 'Идэвхгүй'}
+                    {label}
                   </button>
                 ))}
               </div>
@@ -397,8 +405,13 @@ export default function ProfilePage({ user, userSettings, trades, onUpdateSettin
             </div>
           )}
 
-          {accounts.filter(a => accountFilter === 'active' ? a.active !== false : a.active === false).map(acc => {
-            const isActive  = acc.active !== false;
+          {accounts.filter(a => {
+            const st = a.status ?? (a.active === false ? 'inactive' : 'active');
+            return st === accountFilter;
+          }).map(acc => {
+            const accStatus = acc.status ?? (acc.active === false ? 'inactive' : 'active');
+            const isActive  = accStatus === 'active';
+            const isArchived = accStatus === 'archived';
             const accTrades = trades.filter(t => t.account === acc.name);
             const pnl       = accTrades.reduce((s, t) => s + (t.pnl || 0), 0);
             const current   = acc.balance + pnl;
@@ -408,17 +421,16 @@ export default function ProfilePage({ user, userSettings, trades, onUpdateSettin
               ? Math.min(Math.max(((current - acc.balance) / (acc.goal - acc.balance)) * 100, 0), 100)
               : 0;
             const isUp = pnl >= 0;
+            const menuOpen = openMenuName === acc.name;
 
-            const toggleActive = () => {
-              onUpdateSettings({
-                accounts: accounts.map(a => a.name === acc.name ? { ...a, active: !isActive } : a)
-              });
+            const setStatus = (s: AccountStatus) => {
+              onUpdateSettings({ accounts: accounts.map(a => a.name === acc.name ? { ...a, status: s, active: s === 'active' } : a) });
+              setOpenMenuName(null);
             };
-
             return (
-              <div key={acc.name} className={`card overflow-hidden group hover:border-border2 transition-all ${!isActive ? 'opacity-50' : ''}`}>
+              <div key={acc.name} className={`card overflow-visible hover:border-border2 transition-all relative ${isArchived ? 'opacity-40' : !isActive ? 'opacity-60' : ''}`}>
                 {/* Color top bar */}
-                <div className="h-[3px]" style={{ background: isUp ? 'linear-gradient(90deg,#22c55e,#00e5ff)' : 'linear-gradient(90deg,#ef4444,#f97316)' }} />
+                <div className="h-[3px] rounded-t-xl" style={{ background: isUp ? 'linear-gradient(90deg,#22c55e,#00e5ff)' : 'linear-gradient(90deg,#ef4444,#f97316)' }} />
 
                 <div className="p-5">
                   {/* Header */}
@@ -445,21 +457,29 @@ export default function ProfilePage({ user, userSettings, trades, onUpdateSettin
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
-                      {!isActive && (
+                      {accStatus !== 'active' && (
                         <span className="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-zinc-700/60 text-zinc-400 border border-zinc-600/50">
-                          Идэвхгүй
+                          {accStatus === 'archived' ? 'Архив' : 'Идэвхгүй'}
                         </span>
                       )}
                       <span className="text-xs font-mono font-semibold px-2 py-0.5 rounded-md"
                         style={{ color: isUp ? '#22c55e' : '#ef4444', background: isUp ? 'rgba(34,197,94,0.1)' : 'rgba(239,68,68,0.1)' }}>
                         {fmtPnl(pnl)}
                       </span>
-                      <button
-                        onClick={toggleActive}
-                        title={isActive ? 'Идэвхгүй болгох' : 'Идэвхжүүлэх'}
-                        className={`transition-colors opacity-0 group-hover:opacity-100 p-1.5 rounded-lg ${isActive ? 'text-border2 hover:text-red hover:bg-red/10' : 'text-green hover:bg-green/10'}`}>
-                        {isActive ? <PowerOff size={13} /> : <Power size={13} />}
-                      </button>
+                      {/* Overflow menu */}
+                      <div className="relative">
+                        <button onClick={e => { e.stopPropagation(); setOpenMenuName(menuOpen ? null : acc.name); }}
+                          className="p-1.5 rounded-lg text-muted hover:text-zinc-200 hover:bg-bg3 transition-colors">
+                          <MoreHorizontal size={14} />
+                        </button>
+                        {menuOpen && (
+                          <div className="absolute right-0 top-8 z-30 bg-bg2 border border-border2 rounded-xl shadow-2xl w-44 py-1 text-sm">
+                            {accStatus !== 'active'   && <button onClick={() => setStatus('active')}   className="flex items-center gap-2.5 w-full px-3 py-2 hover:bg-bg3 text-green"><Zap size={13}/> Идэвхжүүлэх</button>}
+                            {accStatus !== 'inactive' && <button onClick={() => setStatus('inactive')} className="flex items-center gap-2.5 w-full px-3 py-2 hover:bg-bg3 text-zinc-300"><ZapOff size={13}/> Идэвхгүй болгох</button>}
+                            {accStatus !== 'archived' && <button onClick={() => setStatus('archived')} className="flex items-center gap-2.5 w-full px-3 py-2 hover:bg-bg3 text-zinc-400"><Archive size={13}/> Архивлах</button>}
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
 

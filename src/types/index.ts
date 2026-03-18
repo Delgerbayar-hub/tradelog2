@@ -57,12 +57,15 @@ export interface Account {
 
 export type AccountType = 'Personal' | 'Challenge' | 'Funded' | 'Demo' | 'Contest';
 
+export type AccountStatus = 'active' | 'inactive' | 'archived';
+
 export interface TradingAccount {
   name: string;
   type?: AccountType;
   balance: number;   // starting balance
   goal: number;      // target balance
-  active?: boolean;  // false = идэвхгүй (устгасан биш)
+  active?: boolean;  // legacy — use status instead
+  status?: AccountStatus;
 }
 
 export interface UserSettings {
@@ -73,4 +76,5 @@ export interface UserSettings {
   displayName?: string;
   avatarBase64?: string;
   bio?: string;
+  analyticsIncludeInactive?: boolean; // default false (exclude inactive from analytics)
 }

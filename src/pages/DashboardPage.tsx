@@ -4,6 +4,7 @@ import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'rec
 import { Activity, Target, TrendingUp, TrendingDown, Zap, Flame, Trophy, AlertTriangle } from 'lucide-react'
 import type { Trade, UserSettings } from '../types'
 import { fmtPnl } from '../lib/format'
+import { getActiveAccounts, getArchivedNames } from '../lib/accounts'
 
 interface Props { trades: Trade[]; userSettings?: UserSettings | null; onAdd?: () => void }
 
@@ -15,12 +16,19 @@ const ChartTooltip = ({ active, payload, label }: any) => active && payload?.len
 ) : null
 
 export default function DashboardPage({ trades, userSettings, onAdd }: Props) {
-  const accounts = (userSettings?.accounts ?? []).filter(a => a.active !== false)
+  const allAccounts = userSettings?.accounts ?? []
+  const accounts    = getActiveAccounts(allAccounts)
+  const archived    = getArchivedNames(allAccounts)
   const [selectedAccount, setSelectedAccount] = useState<string>('All')
 
+  // Archived account trades hidden everywhere in Dashboard
+  const visibleTrades = useMemo(() =>
+    trades.filter(t => !archived.has(t.account))
+  , [trades, archived])
+
   const filteredTrades = useMemo(() =>
-    selectedAccount === 'All' ? trades : trades.filter(t => t.account === selectedAccount)
-  , [trades, selectedAccount])
+    selectedAccount === 'All' ? visibleTrades : visibleTrades.filter(t => t.account === selectedAccount)
+  , [visibleTrades, selectedAccount])
 
   const activeAccount = accounts.find(a => a.name === selectedAccount)
 

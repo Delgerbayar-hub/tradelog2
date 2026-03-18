@@ -2,6 +2,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { X, Upload, ChevronDown, TrendingUp, TrendingDown, Clipboard } from 'lucide-react';
 import { Trade, UserSettings } from '../types';
+import { getActiveAccounts } from '../lib/accounts';
 
 type FormData = Omit<Trade, 'id' | 'userId' | 'createdAt' | 'updatedAt'>;
 
@@ -24,7 +25,7 @@ type Step = 'entry' | 'exit';
 
 export default function TradeModal({ isOpen, onClose, onSave, editTrade, userSettings }: TradeModalProps) {
   const pairs           = userSettings?.pairs?.length ? userSettings.pairs : DEFAULT_PAIRS;
-  const activeAccounts  = (userSettings?.accounts ?? []).filter(a => a.active !== false);
+  const activeAccounts  = getActiveAccounts(userSettings?.accounts ?? []);
 
   const emptyEntry = {
     date: new Date().toISOString().slice(0, 10),

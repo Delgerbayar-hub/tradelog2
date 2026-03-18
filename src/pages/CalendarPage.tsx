@@ -3,6 +3,7 @@ import { useState, useMemo } from 'react'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import type { Trade, UserSettings } from '../types'
 import { fmtPnl } from '../lib/format'
+import { getActiveAccounts, getArchivedNames } from '../lib/accounts'
 import clsx from 'clsx'
 
 const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December']
@@ -11,16 +12,22 @@ const DAYS   = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat']
 interface Props { trades: Trade[]; onAdd: () => void; userSettings?: UserSettings | null }
 
 export default function CalendarPage({ trades, onAdd, userSettings }: Props) {
-  const accounts = (userSettings?.accounts ?? []).filter(a => a.active !== false)
+  const allAccounts = userSettings?.accounts ?? []
+  const accounts    = getActiveAccounts(allAccounts)
+  const archived    = getArchivedNames(allAccounts)
   const now = new Date()
   const [yr, setYr]   = useState(now.getFullYear())
   const [mo, setMo]   = useState(now.getMonth())
   const [popup, setPopup] = useState<{ date: string; trades: Trade[] } | null>(null)
   const [selectedAccount, setSelectedAccount] = useState('All')
 
+  const visibleTrades = useMemo(() =>
+    trades.filter(t => !archived.has(t.account))
+  , [trades, archived])
+
   const filtered = useMemo(() =>
-    selectedAccount === 'All' ? trades : trades.filter(t => t.account === selectedAccount)
-  , [trades, selectedAccount])
+    selectedAccount === 'All' ? visibleTrades : visibleTrades.filter(t => t.account === selectedAccount)
+  , [visibleTrades, selectedAccount])
 
   const dayMap = useMemo(() => {
     const m: Record<string, Trade[]> = {}
