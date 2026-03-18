@@ -55,16 +55,20 @@ export default function DashboardPage({ trades, userSettings, onAdd }: Props) {
   }, [filteredTrades])
 
   const equity = useMemo(() => {
-    const init = activeAccount?.balance ?? 10000
+    const init = activeAccount
+      ? activeAccount.balance
+      : accounts.reduce((s, a) => s + (a.balance ?? 0), 0)
     let bal = init
     const pts = [{ x: 'Start', v: init }]
     ;[...filteredTrades].sort((a, b) => a.date.localeCompare(b.date))
       .forEach(t => { bal += t.pnl; pts.push({ x: t.date.slice(5), v: +bal.toFixed(2) }) })
     return pts
-  }, [filteredTrades, activeAccount])
+  }, [filteredTrades, activeAccount, accounts])
 
   const drawdown = useMemo(() => {
-    let peak = activeAccount?.balance ?? 10000
+    let peak = activeAccount
+      ? activeAccount.balance
+      : accounts.reduce((s, a) => s + (a.balance ?? 0), 0)
     let bal  = peak
     const pts: { x: string; dd: number }[] = [{ x: 'Start', dd: 0 }]
     ;[...filteredTrades].sort((a, b) => a.date.localeCompare(b.date)).forEach(t => {
