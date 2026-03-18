@@ -15,6 +15,11 @@ export function fmtPnl(value: number, showSign = true, dashOnZero = true): strin
   return sign + str
 }
 
+// Exact balance display with comma separators (no compact abbreviation)
+export function fmtBalance(value: number): string {
+  return '$' + value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+}
+
 export function fmtCompact(value: number): string {
   const abs = Math.abs(value)
   const sign = value < 0 ? '-' : ''

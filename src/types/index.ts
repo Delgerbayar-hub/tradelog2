@@ -55,8 +55,11 @@ export interface Account {
   broker?: string;
 }
 
+export type AccountType = 'Personal' | 'Challenge' | 'Funded' | 'Demo' | 'Contest';
+
 export interface TradingAccount {
   name: string;
+  type?: AccountType;
   balance: number;   // starting balance
   goal: number;      // target balance
   active?: boolean;  // false = идэвхгүй (устгасан биш)

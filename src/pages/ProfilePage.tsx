@@ -2,8 +2,8 @@
 import { useState, useRef } from 'react';
 import { User, updateProfile } from 'firebase/auth';
 import { Plus, PowerOff, Power, Target, X, Pencil, Check, Camera, Quote, TrendingUp, TrendingDown, BarChart2, Wallet, ChevronRight } from 'lucide-react';
-import { Trade, TradingAccount, UserSettings } from '../types';
-import { fmtPnl } from '../lib/format';
+import { Trade, TradingAccount, UserSettings, AccountType } from '../types';
+import { fmtPnl, fmtBalance } from '../lib/format';
 import { auth } from '../lib/firebase';
 
 const DEFAULT_PAIRS = ['XAUUSD', 'EURUSD', 'GBPUSD', 'USDJPY', 'NASDAQ'];
@@ -72,7 +72,7 @@ function AddPairModal({ onClose, onSave, existing }: {
 function AddAccountModal({ onClose, onSave, existing }: {
   onClose: () => void; onSave: (a: TradingAccount) => void; existing: string[];
 }) {
-  const [form, setForm] = useState({ name: '', balance: '', goal: '' });
+  const [form, setForm] = useState({ name: '', type: 'Personal' as AccountType, balance: '', goal: '' });
   const [error, setError] = useState('');
   const handleSave = () => {
     const name    = form.name.trim();
@@ -85,15 +85,37 @@ function AddAccountModal({ onClose, onSave, existing }: {
     if (isNaN(goal)    || goal    <= 0)          return setError('Зорилго оруулна уу');
     if (goal > 1_000_000_000)                    return setError('Зорилго 1 тэрбумаас хэтрэхгүй');
     if (goal <= balance)                         return setError('Зорилго нь эхлэх балансаас их байх ёстой');
-    onSave({ name, balance, goal }); onClose();
+    onSave({ name, type: form.type, balance, goal }); onClose();
   };
+
+  const ACCOUNT_TYPES: AccountType[] = ['Personal', 'Challenge', 'Funded', 'Demo', 'Contest'];
+  const TYPE_COLORS: Record<AccountType, string> = {
+    Personal:  'bg-blue-500/15 text-blue-400 border-blue-500/30',
+    Challenge: 'bg-yellow-500/15 text-yellow-400 border-yellow-500/30',
+    Funded:    'bg-green-500/15 text-green-400 border-green-500/30',
+    Demo:      'bg-zinc-500/15 text-zinc-400 border-zinc-500/30',
+    Contest:   'bg-purple-500/15 text-purple-400 border-purple-500/30',
+  };
+
   return (
     <Modal title="Данс нэмэх" onClose={onClose} onSave={handleSave}>
       <div>
         <label className="label">Дансны нэр</label>
         <input autoFocus type="text" value={form.name}
           onChange={e => { setForm(f => ({ ...f, name: e.target.value })); setError(''); }}
-          placeholder="Live, Demo, Prop Firm..." className="input" />
+          placeholder="MyFundedAccount, Demo01..." className="input" />
+      </div>
+      <div>
+        <label className="label">Дансны төрөл</label>
+        <div className="flex flex-wrap gap-2 mt-1">
+          {ACCOUNT_TYPES.map(t => (
+            <button key={t} type="button"
+              onClick={() => setForm(f => ({ ...f, type: t }))}
+              className={`text-xs font-medium px-3 py-1.5 rounded-lg border transition-all ${form.type === t ? TYPE_COLORS[t] : 'bg-bg3 text-muted border-border hover:border-border2'}`}>
+              {t}
+            </button>
+          ))}
+        </div>
       </div>
       <div className="grid grid-cols-2 gap-3">
         <div>
@@ -349,7 +371,7 @@ export default function ProfilePage({ user, userSettings, trades, onUpdateSettin
                   </button>
                 ))}
               </div>
-              {accounts.length < 3 ? (
+              {accounts.length < 5 ? (
                 <button onClick={() => setShowAddAccount(true)} className="btn-primary text-xs px-3 py-1.5">
                   <Plus size={13} /> Данс нэмэх
                 </button>
@@ -369,7 +391,7 @@ export default function ProfilePage({ user, userSettings, trades, onUpdateSettin
                 <p className="text-white font-medium">Данс байхгүй байна</p>
                 <p className="text-muted text-sm mt-1">Арилжааны данс нэмж эхлэнэ үү</p>
               </div>
-              <button onClick={() => setShowAddAccount(true)} className="btn-primary mx-auto mt-2" disabled={accounts.length >= 3}>
+              <button onClick={() => setShowAddAccount(true)} className="btn-primary mx-auto mt-2" disabled={accounts.length >= 5}>
                 <Plus size={14} /> Данс нэмэх
               </button>
             </div>
@@ -407,7 +429,18 @@ export default function ProfilePage({ user, userSettings, trades, onUpdateSettin
                         {isUp ? <TrendingUp size={17} className="text-green" /> : <TrendingDown size={17} className="text-red" />}
                       </div>
                       <div>
-                        <p className="text-white font-bold leading-tight">{acc.name}</p>
+                        <div className="flex items-center gap-2">
+                          <p className="text-white font-bold leading-tight">{acc.name}</p>
+                          {acc.type && (
+                            <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-md border ${
+                              acc.type === 'Personal'  ? 'bg-blue-500/15 text-blue-400 border-blue-500/30' :
+                              acc.type === 'Challenge' ? 'bg-yellow-500/15 text-yellow-400 border-yellow-500/30' :
+                              acc.type === 'Funded'    ? 'bg-green-500/15 text-green-400 border-green-500/30' :
+                              acc.type === 'Demo'      ? 'bg-zinc-500/15 text-zinc-400 border-zinc-500/30' :
+                                                         'bg-purple-500/15 text-purple-400 border-purple-500/30'
+                            }`}>{acc.type}</span>
+                          )}
+                        </div>
                         <p className="text-muted text-xs">{accTrades.length} арилжаа</p>
                       </div>
                     </div>
@@ -442,14 +475,14 @@ export default function ProfilePage({ user, userSettings, trades, onUpdateSettin
                     <div className="bg-bg3 rounded-xl p-3.5">
                       <p className="text-[10px] text-muted uppercase tracking-widest mb-2">Balance</p>
                       <p className={`text-2xl font-bold font-mono leading-none ${isUp ? 'text-green' : 'text-red'}`}>
-                        {fmtPnl(current, false)}
+                        {fmtBalance(current)}
                       </p>
-                      <p className="text-[11px] text-muted mt-1.5">эхлэл {fmtPnl(acc.balance, false)}</p>
+                      <p className="text-[11px] text-muted mt-1.5">эхлэл {fmtBalance(acc.balance)}</p>
                     </div>
                     <div className="bg-bg3 rounded-xl p-3.5">
                       <p className="text-[10px] text-muted uppercase tracking-widest mb-2 flex items-center gap-1"><Target size={9} /> Goal</p>
                       <p className="text-2xl font-bold font-mono leading-none text-yellow-400">
-                        {fmtPnl(acc.goal, false)}
+                        {fmtBalance(acc.goal)}
                       </p>
                       <p className="text-[11px] text-muted mt-1.5 flex items-center gap-1">
                         <ChevronRight size={9} /> зорилго
@@ -475,8 +508,8 @@ export default function ProfilePage({ user, userSettings, trades, onUpdateSettin
                         }} />
                     </div>
                     <div className="flex justify-between text-[10px] text-muted">
-                      <span>{fmtPnl(acc.balance, false)}</span>
-                      <span>{fmtPnl(acc.goal, false)}</span>
+                      <span>{fmtBalance(acc.balance)}</span>
+                      <span>{fmtBalance(acc.goal)}</span>
                     </div>
                   </div>
                 </div>

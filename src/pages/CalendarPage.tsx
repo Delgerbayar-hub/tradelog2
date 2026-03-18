@@ -133,7 +133,7 @@ export default function CalendarPage({ trades, onAdd, userSettings }: Props) {
         </div>
       )}
 
-      <div className="py-10 px-12 pt-16 fade-in space-y-5">
+      <div className="py-10 px-12 pt-16 fade-in space-y-4">
 
         {/* ── Header: Monthly P/L + stats ── */}
         <div className="text-center">
