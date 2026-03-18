@@ -5,34 +5,34 @@ import type { Trade, UserSettings } from '../types'
 import clsx from 'clsx'
 
 const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December']
-const DAYS   = ['Да','Мя','Лх','Пү','Ба','Бя','Ня']
+const DAYS   = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat']
 
 interface Props { trades: Trade[]; onAdd: () => void; userSettings?: UserSettings | null }
 
 export default function CalendarPage({ trades, onAdd, userSettings }: Props) {
   const accounts = (userSettings?.accounts ?? []).filter(a => a.active !== false)
   const now = new Date()
-  const [yr, setYr] = useState(now.getFullYear())
-  const [mo, setMo] = useState(now.getMonth())
+  const [yr, setYr]   = useState(now.getFullYear())
+  const [mo, setMo]   = useState(now.getMonth())
   const [popup, setPopup] = useState<{ date: string; trades: Trade[] } | null>(null)
-  const [selectedAccount, setSelectedAccount] = useState<string>('All')
+  const [selectedAccount, setSelectedAccount] = useState('All')
 
-  const filteredTrades = useMemo(() =>
+  const filtered = useMemo(() =>
     selectedAccount === 'All' ? trades : trades.filter(t => t.account === selectedAccount)
   , [trades, selectedAccount])
 
   const dayMap = useMemo(() => {
     const m: Record<string, Trade[]> = {}
-    filteredTrades.forEach(t => { if (!m[t.date]) m[t.date] = []; m[t.date].push(t) })
+    filtered.forEach(t => { if (!m[t.date]) m[t.date] = []; m[t.date].push(t) })
     return m
-  }, [filteredTrades])
+  }, [filtered])
 
-  const prefix   = `${yr}-${String(mo + 1).padStart(2,'0')}`
-  const mTrades  = filteredTrades.filter(t => t.date.startsWith(prefix))
-  const mPL      = mTrades.reduce((s,t) => s + t.pnl, 0)
-  const mDays    = [...new Set(mTrades.map(t => t.date))]
-  const winDays  = mDays.filter(d => (dayMap[d]||[]).reduce((s,t) => s+t.pnl,0) > 0).length
-  const lossDays = mDays.filter(d => (dayMap[d]||[]).reduce((s,t) => s+t.pnl,0) < 0).length
+  const prefix  = `${yr}-${String(mo + 1).padStart(2,'0')}`
+  const mTrades = filtered.filter(t => t.date.startsWith(prefix))
+  const mPL     = mTrades.reduce((s,t) => s + t.pnl, 0)
+  const mDays   = [...new Set(mTrades.map(t => t.date))]
+  const winDays = mDays.filter(d => (dayMap[d]||[]).reduce((s,t)=>s+t.pnl,0) > 0).length
+  const lossDays= mDays.filter(d => (dayMap[d]||[]).reduce((s,t)=>s+t.pnl,0) < 0).length
 
   const nav = (dir: number) => {
     let m = mo + dir, y = yr
@@ -41,7 +41,7 @@ export default function CalendarPage({ trades, onAdd, userSettings }: Props) {
     setMo(m); setYr(y)
   }
 
-  const offset  = (new Date(yr, mo, 1).getDay() + 6) % 7
+  const offset  = new Date(yr, mo, 1).getDay()
   const daysIn  = new Date(yr, mo + 1, 0).getDate()
   const prevDim = new Date(yr, mo, 0).getDate()
   const today   = now.toISOString().split('T')[0]
@@ -55,37 +55,46 @@ export default function CalendarPage({ trades, onAdd, userSettings }: Props) {
   const rem = (7 - cells.length % 7) % 7
   for (let d = 1; d <= rem; d++) cells.push({ day: d, date: '', cur: false })
 
-  const fmtDate = (ds: string) => {
-    const d = new Date(ds + 'T00:00:00')
-    return d.toLocaleDateString('mn-MN', { month: 'long', day: 'numeric', weekday: 'long' })
+  const weeks: typeof cells[] = []
+  for (let i = 0; i < cells.length; i += 7) weeks.push(cells.slice(i, i + 7))
+
+  const fmtDate = (ds: string) =>
+    new Date(ds + 'T00:00:00').toLocaleDateString('mn-MN', { month: 'long', day: 'numeric', weekday: 'long' })
+
+  const pnlStr = (pl: number) => {
+    const abs = Math.abs(pl)
+    const s = abs >= 1000 ? '$' + (abs/1000).toFixed(1) + 'k' : '$' + abs.toFixed(2)
+    return (pl >= 0 ? '+' : '-') + s
   }
 
   return (
     <>
+      {/* ── Popup ── */}
       {popup && (
-        <div className="fixed inset-0 bg-black/80 z-[500] flex items-center justify-center backdrop-blur-sm p-4" onClick={() => setPopup(null)}>
-          <div className="bg-bg2 border border-border rounded-2xl w-full max-w-[420px] max-h-[80vh] overflow-y-auto shadow-2xl" onClick={e => e.stopPropagation()}>
-            {/* Popup header */}
+        <div className="fixed inset-0 bg-black/80 z-[500] flex items-center justify-center backdrop-blur-sm p-4"
+          onClick={() => setPopup(null)}>
+          <div className="bg-bg2 border border-border rounded-2xl w-full max-w-[420px] max-h-[80vh] overflow-y-auto shadow-2xl"
+            onClick={e => e.stopPropagation()}>
             <div className="flex justify-between items-start p-5 border-b border-border">
               <div>
                 <div className="text-xs text-muted mb-0.5">Арилжааны жагсаалт</div>
                 <div className="font-semibold text-zinc-100">{fmtDate(popup.date)}</div>
               </div>
-              <button onClick={() => setPopup(null)} className="w-7 h-7 rounded-full bg-bg3 flex items-center justify-center text-muted hover:text-zinc-200 transition-colors text-base">×</button>
+              <button onClick={() => setPopup(null)}
+                className="w-7 h-7 rounded-full bg-bg3 flex items-center justify-center text-muted hover:text-zinc-200 transition-colors">×</button>
             </div>
-            {/* Day summary */}
             {(() => {
-              const pl  = popup.trades.reduce((s,t) => s+t.pnl, 0)
+              const pl   = popup.trades.reduce((s,t) => s+t.pnl, 0)
               const wins = popup.trades.filter(t=>t.result==='Win').length
-              const wr  = Math.round((wins / popup.trades.length) * 100)
+              const wr   = Math.round((wins / popup.trades.length) * 100)
               return (
                 <div className="grid grid-cols-3 divide-x divide-border border-b border-border">
                   {[
-                    { l: 'Нийт PNL',  v: (pl>=0?'+':'')+'$'+pl.toFixed(2), c: pl>=0 ? 'text-green' : 'text-red' },
-                    { l: 'Арилжаа',   v: String(popup.trades.length),        c: 'text-zinc-100' },
-                    { l: 'Win Rate',  v: wr+'%',                             c: 'text-green' },
+                    { l:'Нийт PNL', v: pnlStr(pl), c: pl>=0 ? 'text-green' : 'text-red' },
+                    { l:'Арилжаа',  v: String(popup.trades.length), c:'text-zinc-100' },
+                    { l:'Win Rate', v: wr+'%', c: wr>=50?'text-green':'text-red' },
                   ].map(s => (
-                    <div key={s.l} className="py-3 text-center">
+                    <div key={s.l} className="py-4 text-center">
                       <div className={`text-base font-bold font-mono ${s.c}`}>{s.v}</div>
                       <div className="text-[10px] text-muted mt-0.5">{s.l}</div>
                     </div>
@@ -93,7 +102,6 @@ export default function CalendarPage({ trades, onAdd, userSettings }: Props) {
                 </div>
               )
             })()}
-            {/* Trade list */}
             <div className="p-4 space-y-2">
               {popup.trades.map(t => (
                 <div key={t.id} className={clsx(
@@ -105,17 +113,17 @@ export default function CalendarPage({ trades, onAdd, userSettings }: Props) {
                   <div className="flex justify-between items-start mb-2">
                     <div>
                       <span className="font-bold text-sm text-zinc-100">{t.pair}</span>
-                      {t.account && <span className="ml-2 text-[10px] text-muted">{t.account}</span>}
+                      {t.account && <span className="ml-2 text-[10px] text-muted bg-bg3 px-1.5 py-0.5 rounded">{t.account}</span>}
                     </div>
                     <span className={clsx('font-mono font-bold text-sm', t.pnl>=0?'text-green':'text-red')}>
-                      {t.pnl>=0?'+':''}${t.pnl.toFixed(2)}
+                      {pnlStr(t.pnl)}
                     </span>
                   </div>
                   <div className="flex gap-1.5 flex-wrap">
                     <span className={t.direction==='buy'?'badge-buy':'badge-sell'}>{t.direction}</span>
                     <span className={t.result==='Win'?'badge-win':t.result==='Loss'?'badge-loss':'badge-be'}>{t.result}</span>
                     {t.rrRatio && <span className="text-[10px] bg-bg3 text-muted px-1.5 py-0.5 rounded">{t.rrRatio}</span>}
-                    <span className="text-[10px] text-muted self-center">{t.session}</span>
+                    {t.session && <span className="text-[10px] text-muted self-center">{t.session}</span>}
                   </div>
                   {t.screenshotBefore?.[0]?.trim() && (
                     <img src={t.screenshotBefore[0]} className="w-full rounded-lg mt-2.5 max-h-32 object-cover" alt="chart"/>
@@ -128,118 +136,135 @@ export default function CalendarPage({ trades, onAdd, userSettings }: Props) {
         </div>
       )}
 
-      <div className="p-6 fade-in">
-        {/* Page header */}
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h1 className="text-xl font-bold text-zinc-100 tracking-tight">Calendar</h1>
-            <p className="text-sm text-muted mt-0.5">Өдөр бүрийн PNL</p>
+      <div className="py-10 px-12 pt-16 fade-in space-y-5">
+
+        {/* ── Header: Monthly P/L + stats ── */}
+        <div className="text-center">
+          <span className="text-xl font-bold font-mono text-white">Monthly P/L: </span>
+          <span className={`text-xl font-bold font-mono ${mPL >= 0 ? 'text-green' : 'text-red'}`}>
+            {mPL >= 0 ? '+' : '-'}${Math.abs(mPL).toFixed(2)}
+          </span>
+        </div>
+
+        {/* ── Controls ── */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-1">
+            <button onClick={() => nav(-1)} className="btn-icon w-8 h-8"><ChevronLeft size={14}/></button>
+            <span className="text-sm font-semibold text-zinc-100 px-3 py-1.5 rounded-lg bg-bg2 border border-border min-w-[130px] text-center">
+              {MONTHS[mo]} {yr}
+            </span>
+            <button onClick={() => nav(1)} className="btn-icon w-8 h-8"><ChevronRight size={14}/></button>
           </div>
+
           <div className="flex items-center gap-2">
             {accounts.length > 0 && (
               <div className="flex items-center gap-1 bg-bg2 border border-border rounded-xl p-1">
-                <button
-                  onClick={() => setSelectedAccount('All')}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${selectedAccount === 'All' ? 'bg-bg3 text-zinc-100 border border-border2' : 'text-muted hover:text-zinc-300'}`}>
+                <button onClick={() => setSelectedAccount('All')}
+                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${selectedAccount==='All' ? 'bg-bg3 text-zinc-100' : 'text-muted hover:text-zinc-300'}`}>
                   Бүгд
                 </button>
                 {accounts.map(a => (
-                  <button key={a.name}
-                    onClick={() => setSelectedAccount(a.name)}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${selectedAccount === a.name ? 'bg-accent/15 text-accent border border-accent/30' : 'text-muted hover:text-zinc-300'}`}>
+                  <button key={a.name} onClick={() => setSelectedAccount(a.name)}
+                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${selectedAccount===a.name ? 'bg-accent/15 text-accent' : 'text-muted hover:text-zinc-300'}`}>
                     {a.name}
                   </button>
                 ))}
               </div>
             )}
-            <button onClick={onAdd} className="btn-primary">Арилжаа бүртгэх+</button>
           </div>
         </div>
 
-        {/* Month stats */}
-        <div className="grid grid-cols-4 gap-3 mb-5">
-          {[
-            { label: 'Нийт арилжаа', val: mTrades.length,                                    color: '#00e5ff' },
-            { label: 'Ногоон өдөр',  val: winDays,                                           color: '#22c55e' },
-            { label: 'Улаан өдөр',   val: lossDays,                                          color: '#ef4444' },
-            { label: 'Сарын PNL',    val: (mPL>=0?'+':'')+'$'+Math.abs(mPL).toFixed(0),     color: mPL>=0?'#22c55e':'#ef4444' },
-          ].map(s => (
-            <div key={s.label} className="card p-4 relative overflow-hidden">
-              <div className="stat-border" style={{ background: s.color }}/>
-              <div className="text-[10px] font-semibold text-muted uppercase tracking-wider">{s.label}</div>
-              <div className="text-2xl font-bold mt-1.5" style={{ color: s.color }}>{s.val}</div>
-            </div>
-          ))}
-        </div>
-
-        {/* Calendar card */}
-        <div className="card p-5">
-          {/* Month nav */}
-          <div className="flex items-center justify-between mb-5">
-            <div className="text-base font-semibold text-zinc-100">{MONTHS[mo]} {yr}</div>
-            <div className="flex items-center gap-1.5">
-              <button onClick={() => nav(-1)} className="btn-icon"><ChevronLeft size={14}/></button>
-              <button onClick={() => { setYr(now.getFullYear()); setMo(now.getMonth()) }} className="btn-ghost px-3 py-1.5 text-xs">Өнөөдөр</button>
-              <button onClick={() => nav(1)}  className="btn-icon"><ChevronRight size={14}/></button>
-            </div>
-          </div>
+        {/* ── Calendar ── */}
+        <div className="border border-border rounded-2xl overflow-hidden bg-bg2">
 
           {/* Day headers */}
-          <div className="grid grid-cols-7 gap-1.5 mb-1.5">
-            {DAYS.map(d => (
-              <div key={d} className="text-center text-[10px] font-semibold text-muted uppercase tracking-widest py-1">{d}</div>
+          <div className="grid grid-cols-7 bg-bg3/40 border-b border-border">
+            {DAYS.map((d, i) => (
+              <div key={d} className={clsx(
+                'text-center text-[11px] font-semibold tracking-wide py-3',
+                i < 6 && 'border-r border-border',
+                i === 6 ? 'text-zinc-500' : 'text-muted'
+              )}>{d}</div>
             ))}
           </div>
 
-          {/* Cells */}
-          <div className="grid grid-cols-7 gap-1.5">
-            {cells.map((c, i) => {
-              if (!c.cur) return (
-                <div key={i} className="h-[88px] rounded-xl bg-bg3/30 border border-border/30 opacity-25 p-2">
-                  <div className="text-[11px] text-muted">{c.day}</div>
-                </div>
-              )
+          {/* Weeks */}
+          {weeks.map((week, wi) => {
+            const weekTrades = week.flatMap(c => c.cur ? (dayMap[c.date] || []) : [])
+            const weekPL     = weekTrades.reduce((s,t) => s + t.pnl, 0)
+            const weekCount  = weekTrades.length
+            const isLast     = wi === weeks.length - 1
 
-              const dt  = dayMap[c.date] || []
-              const pl  = dt.reduce((s,t) => s + t.pnl, 0)
-              const isT = c.date === today
-              const hasT = dt.length > 0
+            return (
+              <div key={wi} className="grid grid-cols-7" style={{ minHeight: 120 }}>
+                {week.map((c, ci) => {
+                  const isSat = ci === 6
+                  const dt    = c.cur ? (dayMap[c.date] || []) : []
+                  const pl    = dt.reduce((s,t) => s + t.pnl, 0)
+                  const isT   = c.date === today
+                  const hasT  = dt.length > 0
 
-              return (
-                <div key={i}
-                  onClick={() => hasT && setPopup({ date: c.date, trades: dt })}
-                  className={clsx(
-                    'h-[88px] rounded-xl border p-2 flex flex-col transition-all duration-150',
-                    hasT && pl > 0  ? 'border-green/30 bg-green/8  hover:bg-green/14  cursor-pointer' : '',
-                    hasT && pl < 0  ? 'border-red/30   bg-red/8    hover:bg-red/14    cursor-pointer' : '',
-                    hasT && pl === 0 ? 'border-yellow/30 bg-yellow/8 hover:bg-yellow/14 cursor-pointer' : '',
-                    !hasT           ? 'border-border/50 bg-bg/40' : '',
-                    isT             ? 'ring-1 ring-accent/50' : '',
-                  )}>
-                  {/* Day number */}
-                  <div className={clsx(
-                    'text-[11px] font-semibold w-5 h-5 flex items-center justify-center rounded-full mb-1',
-                    isT ? 'bg-accent text-black' : 'text-muted'
-                  )}>{c.day}</div>
-
-                  {/* PNL */}
-                  {hasT ? (
-                    <div className="flex-1 flex flex-col items-center justify-center">
-                      <div className={clsx(
-                        'text-[15px] font-bold font-mono leading-none',
-                        pl > 0 ? 'text-green' : pl < 0 ? 'text-red' : 'text-yellow'
+                  /* Saturday = week summary */
+                  if (isSat) {
+                    return (
+                      <div key={ci} className={clsx(
+                        'border-l flex flex-col items-center justify-center gap-1 px-2 py-4',
+                        'border-border bg-bg3/20',
+                        !isLast && 'border-b',
                       )}>
-                        {pl >= 0 ? '+' : ''}${Math.abs(pl) >= 1000 ? (pl/1000).toFixed(1)+'k' : pl.toFixed(0)}
+                        <span className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest">Week {wi + 1}</span>
+                        <span className={clsx(
+                          'text-[17px] font-bold font-mono leading-none',
+                          weekPL > 0 ? 'text-green' : weekPL < 0 ? 'text-red' : 'text-zinc-500'
+                        )}>
+                          {weekPL >= 0 ? '+' : '-'}${Math.abs(weekPL).toFixed(2)}
+                        </span>
+                        <span className="text-[10px] text-zinc-600">{weekCount} trades</span>
                       </div>
-                      <div className="text-[9px] text-muted mt-1">{dt.length} арилжаа</div>
+                    )
+                  }
+
+                  /* Regular day */
+                  return (
+                    <div key={ci}
+                      onClick={() => hasT && setPopup({ date: c.date, trades: dt })}
+                      className={clsx(
+                        'flex flex-col p-2.5 transition-colors duration-150',
+                        ci > 0 && 'border-l border-border2',
+                        !isLast && 'border-b border-border2',
+                        !c.cur && 'opacity-25',
+                        hasT && pl > 0   && 'bg-green/20  hover:bg-green/30  cursor-pointer',
+                        hasT && pl < 0   && 'bg-red/20    hover:bg-red/30    cursor-pointer',
+                        hasT && pl === 0 && 'bg-yellow/20 hover:bg-yellow/30 cursor-pointer',
+                      )}>
+
+                      {/* Date badge */}
+                      <div className={clsx(
+                        'text-xs font-semibold w-[22px] h-[22px] flex items-center justify-center rounded-full self-start leading-none',
+                        isT  ? 'bg-accent text-black font-bold' :
+                        c.cur ? 'text-zinc-500' : 'text-zinc-700'
+                      )}>{c.day}</div>
+
+                      {/* PNL */}
+                      {hasT && (
+                        <div className="flex-1 flex flex-col items-center justify-center gap-0.5 mt-1">
+                          <span className={clsx(
+                            'text-[22px] font-bold font-mono leading-none',
+                            pl > 0 ? 'text-green' : pl < 0 ? 'text-red' : 'text-yellow'
+                          )}>
+                            {pl >= 0 ? '+' : '-'}${Math.abs(pl) >= 1000
+                              ? (Math.abs(pl)/1000).toFixed(1)+'k'
+                              : Math.abs(pl).toFixed(2)}
+                          </span>
+                          <span className="text-[11px] text-zinc-500">{dt.length} trades</span>
+                        </div>
+                      )}
                     </div>
-                  ) : (
-                    <div className="flex-1" />
-                  )}
-                </div>
-              )
-            })}
-          </div>
+                  )
+                })}
+              </div>
+            )
+          })}
         </div>
       </div>
     </>
