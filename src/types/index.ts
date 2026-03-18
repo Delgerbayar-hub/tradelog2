@@ -76,5 +76,7 @@ export interface UserSettings {
   displayName?: string;
   avatarBase64?: string;
   bio?: string;
-  analyticsIncludeInactive?: boolean; // default false (exclude inactive from analytics)
+  analyticsIncludeInactive?: boolean;
+  monthlyReviews?: Record<string, string>; // "2026-03" → review text
+  weeklyReviews?: Record<string, string>;  // "2026-03-W2" → review text
 }

@@ -130,7 +130,7 @@ export default function App() {
             onModalClose={() => setOpenModal(false)}
           />
         ) : page === 'calendar' ? (
-          <CalendarPage trades={trades} onAdd={() => { setPage('trades'); setOpenModal(true); }} userSettings={userSettings} />
+          <CalendarPage trades={trades} onAdd={() => { setPage('trades'); setOpenModal(true); }} userSettings={userSettings} onUpdateSettings={updateUserSettings} />
         ) : (
           <ProfilePage
             user={user}

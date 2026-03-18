@@ -1,6 +1,6 @@
 // src/pages/CalendarPage.tsx
-import { useState, useMemo } from 'react'
-import { ChevronLeft, ChevronRight } from 'lucide-react'
+import { useState, useMemo, useCallback } from 'react'
+import { ChevronLeft, ChevronRight, NotebookPen, X } from 'lucide-react'
 import type { Trade, UserSettings } from '../types'
 import { fmtPnl } from '../lib/format'
 import { getActiveAccounts, getArchivedNames } from '../lib/accounts'
@@ -9,16 +9,23 @@ import clsx from 'clsx'
 const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December']
 const DAYS   = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat']
 
-interface Props { trades: Trade[]; onAdd: () => void; userSettings?: UserSettings | null }
+interface Props {
+  trades: Trade[]
+  onAdd: () => void
+  userSettings?: UserSettings | null
+  onUpdateSettings?: (p: Partial<UserSettings>) => void
+}
 
-export default function CalendarPage({ trades, onAdd, userSettings }: Props) {
+export default function CalendarPage({ trades, onAdd, userSettings, onUpdateSettings }: Props) {
   const allAccounts = userSettings?.accounts ?? []
   const accounts    = getActiveAccounts(allAccounts)
   const archived    = getArchivedNames(allAccounts)
   const now = new Date()
   const [yr, setYr]   = useState(now.getFullYear())
   const [mo, setMo]   = useState(now.getMonth())
-  const [popup, setPopup] = useState<{ date: string; trades: Trade[] } | null>(null)
+  const [popup, setPopup]       = useState<{ date: string; trades: Trade[] } | null>(null)
+  const [weekReview, setWeekReview] = useState<{ key: string; label: string } | null>(null)
+  const [weekDraft, setWeekDraft]   = useState('')
   const [selectedAccount, setSelectedAccount] = useState('All')
 
   const visibleTrades = useMemo(() =>
@@ -70,6 +77,30 @@ export default function CalendarPage({ trades, onAdd, userSettings }: Props) {
     new Date(ds + 'T00:00:00').toLocaleDateString('mn-MN', { month: 'long', day: 'numeric', weekday: 'long' })
 
   const pnlStr = (pl: number) => fmtPnl(pl)
+
+  const monthKey    = `${yr}-${String(mo + 1).padStart(2, '0')}`
+  const monthReview = userSettings?.monthlyReviews?.[monthKey] ?? ''
+
+  const saveMonthReview = useCallback((text: string) => {
+    onUpdateSettings?.({
+      monthlyReviews: { ...(userSettings?.monthlyReviews ?? {}), [monthKey]: text },
+    })
+  }, [monthKey, onUpdateSettings, userSettings?.monthlyReviews])
+
+  const openWeekReview = (wi: number) => {
+    const key   = `${monthKey}-W${wi + 1}`
+    const label = `Week ${wi + 1} — ${MONTHS[mo]} ${yr}`
+    setWeekDraft(userSettings?.weeklyReviews?.[key] ?? '')
+    setWeekReview({ key, label })
+  }
+
+  const saveWeekReview = () => {
+    if (!weekReview) return
+    onUpdateSettings?.({
+      weeklyReviews: { ...(userSettings?.weeklyReviews ?? {}), [weekReview.key]: weekDraft },
+    })
+    setWeekReview(null)
+  }
 
   return (
     <>
@@ -135,6 +166,51 @@ export default function CalendarPage({ trades, onAdd, userSettings }: Props) {
                   {t.review && <p className="text-[11px] text-muted mt-2 leading-relaxed">{t.review}</p>}
                 </div>
               ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Week Review Modal ── */}
+      {weekReview && (
+        <div className="fixed inset-0 bg-black/80 z-[500] flex items-center justify-center backdrop-blur-sm p-4"
+          onClick={() => setWeekReview(null)}>
+          <div className="bg-bg2 border border-border rounded-2xl w-full max-w-md shadow-2xl"
+            onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between px-5 py-4 border-b border-border">
+              <div className="flex items-center gap-2">
+                <NotebookPen size={15} className="text-accent" />
+                <span className="font-semibold text-zinc-100 text-sm">{weekReview.label}</span>
+              </div>
+              <button onClick={() => setWeekReview(null)}
+                className="w-7 h-7 rounded-full bg-bg3 flex items-center justify-center text-muted hover:text-zinc-200 transition-colors">
+                <X size={13} />
+              </button>
+            </div>
+            <div className="p-5">
+              <textarea
+                autoFocus
+                value={weekDraft}
+                onChange={e => setWeekDraft(e.target.value.slice(0, 696))}
+                placeholder="Write your weekly review — what went well, what to improve..."
+                rows={6}
+                className="w-full bg-bg3 border border-border rounded-xl px-4 py-3 text-sm text-zinc-200 placeholder-zinc-600 resize-none focus:outline-none focus:border-accent/50 transition-colors"
+              />
+              <div className="flex items-center justify-between mt-2">
+                <span className={clsx('text-[11px]', weekDraft.length >= 696 ? 'text-red' : 'text-zinc-600')}>
+                  {weekDraft.length} / 696
+                </span>
+                <div className="flex gap-2">
+                  <button onClick={() => setWeekReview(null)}
+                    className="px-4 py-2 text-sm text-muted hover:text-zinc-200 transition-colors">
+                    Cancel
+                  </button>
+                  <button onClick={saveWeekReview}
+                    className="px-5 py-2 text-sm bg-accent text-black font-semibold rounded-xl hover:bg-accent/90 transition-colors">
+                    Save
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -210,20 +286,36 @@ export default function CalendarPage({ trades, onAdd, userSettings }: Props) {
 
                   /* Saturday = week summary */
                   if (isSat) {
+                    const wKey    = `${monthKey}-W${wi + 1}`
+                    const hasNote = !!(userSettings?.weeklyReviews?.[wKey])
                     return (
-                      <div key={ci} className={clsx(
-                        'border-l flex flex-col items-center justify-center gap-1 px-2 py-4',
-                        'border-border bg-bg3/20',
-                        !isLast && 'border-b',
-                      )}>
-                        <span className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest">Week {wi + 1}</span>
+                      <div key={ci}
+                        onClick={() => openWeekReview(wi)}
+                        title="Write weekly review"
+                        className={clsx(
+                          'border-l flex flex-col items-center justify-center gap-1.5 px-2 py-4 cursor-pointer group',
+                          'border-border bg-bg3/20 hover:bg-bg3/40 transition-colors',
+                          !isLast && 'border-b',
+                        )}>
+                        <span className="text-[12px] font-medium text-zinc-500 tracking-wide">Week{wi + 1}</span>
                         <span className={clsx(
-                          'text-[17px] font-bold font-mono leading-none',
+                          'text-[26px] font-bold font-mono leading-none',
                           weekPL > 0 ? 'text-green' : weekPL < 0 ? 'text-red' : 'text-zinc-500'
                         )}>
-                          {fmtPnl(weekPL)}
+                          {weekCount > 0 ? fmtPnl(weekPL) : '—'}
                         </span>
-                        <span className="text-[10px] text-zinc-600">{weekCount} trades</span>
+                        {weekCount > 0 && (
+                          <span className="text-[12px] text-zinc-600">{weekCount} trades</span>
+                        )}
+                        <div className={clsx(
+                          'flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-medium transition-all',
+                          hasNote
+                            ? 'bg-accent/15 text-accent'
+                            : 'bg-bg3 text-zinc-500 group-hover:text-zinc-300 group-hover:bg-bg3/80'
+                        )}>
+                          <NotebookPen size={10} />
+                          {hasNote ? 'Note' : '+ Note'}
+                        </div>
                       </div>
                     )
                   }
@@ -267,6 +359,25 @@ export default function CalendarPage({ trades, onAdd, userSettings }: Props) {
               </div>
             )
           })}
+        </div>
+
+        {/* ── Monthly Review ── */}
+        <div className="bg-bg2 border border-border rounded-2xl p-5 space-y-3">
+          <div className="flex items-center gap-2">
+            <NotebookPen size={14} className="text-accent" />
+            <span className="text-sm font-semibold text-zinc-200">Monthly Review</span>
+            <span className="text-xs text-muted">— {MONTHS[mo]} {yr}</span>
+          </div>
+          <textarea
+            value={monthReview}
+            onChange={e => saveMonthReview(e.target.value.slice(0, 1693))}
+            placeholder="What were your strengths this month? What needs improvement? Key lessons..."
+            rows={4}
+            className="w-full bg-bg3 border border-border rounded-xl px-4 py-3 text-sm text-zinc-200 placeholder-zinc-600 resize-none focus:outline-none focus:border-accent/50 transition-colors"
+          />
+          <div className={clsx('text-[11px] text-right mt-1', monthReview.length >= 1693 ? 'text-red' : 'text-zinc-600')}>
+            {monthReview.length} / 1693
+          </div>
         </div>
       </div>
     </>
