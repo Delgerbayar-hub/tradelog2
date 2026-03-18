@@ -3,6 +3,7 @@ import { useState, useRef } from 'react';
 import { User, updateProfile } from 'firebase/auth';
 import { Plus, PowerOff, Power, Target, X, Pencil, Check, Camera, Quote, TrendingUp, TrendingDown, BarChart2, Wallet, ChevronRight } from 'lucide-react';
 import { Trade, TradingAccount, UserSettings } from '../types';
+import { fmtPnl } from '../lib/format';
 import { auth } from '../lib/firebase';
 
 const DEFAULT_PAIRS = ['XAUUSD', 'EURUSD', 'GBPUSD', 'USDJPY', 'NASDAQ'];
@@ -79,9 +80,11 @@ function AddAccountModal({ onClose, onSave, existing }: {
     const goal    = parseFloat(form.goal);
     if (!name)                          return setError('Нэр оруулна уу');
     if (existing.includes(name))        return setError('Аль хэдийн байна');
-    if (isNaN(balance) || balance <= 0) return setError('Эхлэх баланс оруулна уу');
-    if (isNaN(goal)    || goal    <= 0) return setError('Зорилго оруулна уу');
-    if (goal <= balance)                return setError('Зорилго нь эхлэх балансаас их байх ёстой');
+    if (isNaN(balance) || balance <= 0)          return setError('Эхлэх баланс оруулна уу');
+    if (balance > 1_000_000_000)                 return setError('Баланс 1 тэрбумаас хэтрэхгүй');
+    if (isNaN(goal)    || goal    <= 0)          return setError('Зорилго оруулна уу');
+    if (goal > 1_000_000_000)                    return setError('Зорилго 1 тэрбумаас хэтрэхгүй');
+    if (goal <= balance)                         return setError('Зорилго нь эхлэх балансаас их байх ёстой');
     onSave({ name, balance, goal }); onClose();
   };
   return (
@@ -278,7 +281,7 @@ export default function ProfilePage({ user, userSettings, trades, onUpdateSettin
                     { icon: BarChart2, label: 'Нийт арилжаа', val: String(totalTrades), color: '#00e5ff', bg: 'rgba(0,229,255,0.07)' },
                     { icon: Target,    label: 'Win Rate',      val: overallWR + '%',     color: '#22c55e', bg: 'rgba(34,197,94,0.07)' },
                     { icon: Wallet,    label: 'Нийт P&L',
-                      val: (totalPnl >= 0 ? '+$' : '-$') + Math.abs(totalPnl).toLocaleString('en', { maximumFractionDigits: 0 }),
+                      val: fmtPnl(totalPnl),
                       color: totalPnl >= 0 ? '#22c55e' : '#ef4444',
                       bg: totalPnl >= 0 ? 'rgba(34,197,94,0.07)' : 'rgba(239,68,68,0.07)' },
                   ].map(({ icon: Icon, label, val, color, bg }) => (
@@ -346,9 +349,13 @@ export default function ProfilePage({ user, userSettings, trades, onUpdateSettin
                   </button>
                 ))}
               </div>
-              <button onClick={() => setShowAddAccount(true)} className="btn-primary text-xs px-3 py-1.5">
-                <Plus size={13} /> Данс нэмэх
-              </button>
+              {accounts.length < 3 ? (
+                <button onClick={() => setShowAddAccount(true)} className="btn-primary text-xs px-3 py-1.5">
+                  <Plus size={13} /> Данс нэмэх
+                </button>
+              ) : (
+                <span className="text-xs text-muted px-3 py-1.5">Хязгаар: 3/3</span>
+              )}
             </div>
           </div>
 
@@ -362,7 +369,7 @@ export default function ProfilePage({ user, userSettings, trades, onUpdateSettin
                 <p className="text-white font-medium">Данс байхгүй байна</p>
                 <p className="text-muted text-sm mt-1">Арилжааны данс нэмж эхлэнэ үү</p>
               </div>
-              <button onClick={() => setShowAddAccount(true)} className="btn-primary mx-auto mt-2">
+              <button onClick={() => setShowAddAccount(true)} className="btn-primary mx-auto mt-2" disabled={accounts.length >= 3}>
                 <Plus size={14} /> Данс нэмэх
               </button>
             </div>
@@ -412,7 +419,7 @@ export default function ProfilePage({ user, userSettings, trades, onUpdateSettin
                       )}
                       <span className="text-xs font-mono font-semibold px-2 py-0.5 rounded-md"
                         style={{ color: isUp ? '#22c55e' : '#ef4444', background: isUp ? 'rgba(34,197,94,0.1)' : 'rgba(239,68,68,0.1)' }}>
-                        {isUp ? '+' : ''}${pnl.toFixed(0)}
+                        {fmtPnl(pnl)}
                       </span>
                       <button
                         onClick={toggleActive}
@@ -435,14 +442,14 @@ export default function ProfilePage({ user, userSettings, trades, onUpdateSettin
                     <div className="bg-bg3 rounded-xl p-3.5">
                       <p className="text-[10px] text-muted uppercase tracking-widest mb-2">Balance</p>
                       <p className={`text-2xl font-bold font-mono leading-none ${isUp ? 'text-green' : 'text-red'}`}>
-                        ${current.toLocaleString('en', { maximumFractionDigits: 0 })}
+                        {fmtPnl(current, false)}
                       </p>
-                      <p className="text-[11px] text-muted mt-1.5">эхлэл ${acc.balance.toLocaleString('en', { maximumFractionDigits: 0 })}</p>
+                      <p className="text-[11px] text-muted mt-1.5">эхлэл {fmtPnl(acc.balance, false)}</p>
                     </div>
                     <div className="bg-bg3 rounded-xl p-3.5">
                       <p className="text-[10px] text-muted uppercase tracking-widest mb-2 flex items-center gap-1"><Target size={9} /> Goal</p>
                       <p className="text-2xl font-bold font-mono leading-none text-yellow-400">
-                        ${acc.goal.toLocaleString('en', { maximumFractionDigits: 0 })}
+                        {fmtPnl(acc.goal, false)}
                       </p>
                       <p className="text-[11px] text-muted mt-1.5 flex items-center gap-1">
                         <ChevronRight size={9} /> зорилго
@@ -468,8 +475,8 @@ export default function ProfilePage({ user, userSettings, trades, onUpdateSettin
                         }} />
                     </div>
                     <div className="flex justify-between text-[10px] text-muted">
-                      <span>${acc.balance.toLocaleString()}</span>
-                      <span>${acc.goal.toLocaleString()}</span>
+                      <span>{fmtPnl(acc.balance, false)}</span>
+                      <span>{fmtPnl(acc.goal, false)}</span>
                     </div>
                   </div>
                 </div>

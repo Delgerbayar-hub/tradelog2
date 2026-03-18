@@ -34,7 +34,7 @@ export default function TradeModal({ isOpen, onClose, onSave, editTrade, userSet
     lotSize: 0.01,
     session: 'London' as const,
     psychology: 'Хэвийн' as const,
-    planExecution: 'Планатай' as const,
+    planExecution: 'Төлвөлгөөтэй' as const,
     confidence: 'Дунд' as const,
     riskPercent: 1,
     rrRatio: '1:2' as const,
@@ -330,7 +330,7 @@ export default function TradeModal({ isOpen, onClose, onSave, editTrade, userSet
                   </Field>
                   <Field label="Plan Execution">
                     <div className="flex gap-2">
-                      {(['Планатай','Плангүй'] as const).map(p => (
+                      {(['Төлвөлгөөтэй','Төлвөлгөөгүй'] as const).map(p => (
                         <button
                           key={p}
                           onClick={() => set('planExecution', p)}
@@ -382,7 +382,7 @@ export default function TradeModal({ isOpen, onClose, onSave, editTrade, userSet
                   <textarea
                     value={form.entryDetails}
                     onChange={e => set('entryDetails', e.target.value)}
-                    placeholder="Аriljaand orson nöхцлöö tайлбарла..."
+                    placeholder="Арилжаанд орсон нөхцлөө тайлбарла..."
                     rows={3}
                     className={`${inputCls} resize-none`}
                   />
@@ -545,11 +545,14 @@ const btnPrimary = (color: 'cyan' | 'purple') =>
     ? 'px-6 py-2 rounded-xl bg-accent text-black font-semibold text-sm hover:opacity-90 transition-all'
     : 'px-6 py-2 rounded-xl bg-purple text-white font-semibold text-sm hover:opacity-90 transition-all';
 
-function NumericInput({ value, onChange, step: _step, min }: {
+const MAX_VALUE = 1_000_000_000;
+
+function NumericInput({ value, onChange, step: _step, min, max = MAX_VALUE }: {
   value: number;
   onChange: (v: number) => void;
   step: number;
   min?: number;
+  max?: number;
 }) {
   const [display, setDisplay] = useState(String(value));
 
@@ -565,18 +568,17 @@ function NumericInput({ value, onChange, step: _step, min }: {
       value={display}
       onChange={e => {
         const raw = e.target.value;
-        // Allow: digits, one dot, leading minus
         if (raw === '' || raw === '-' || /^-?\d*\.?\d*$/.test(raw)) {
           setDisplay(raw);
           const n = parseFloat(raw);
-          if (!isNaN(n)) onChange(n);
+          if (!isNaN(n) && n <= max) onChange(n);
         }
       }}
       onBlur={() => {
         const n = parseFloat(display);
-        const safe = isNaN(n)
-          ? (min !== undefined && isFinite(min) ? min : 0)
-          : min !== undefined && isFinite(min) && n < min ? min : n;
+        let safe = isNaN(n) ? (min !== undefined && isFinite(min) ? min : 0) : n;
+        if (min !== undefined && isFinite(min) && safe < min) safe = min;
+        if (safe > max) safe = max;
         onChange(safe);
         setDisplay(String(safe));
       }}

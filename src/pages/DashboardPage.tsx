@@ -3,6 +3,7 @@ import { useMemo, useState } from 'react'
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts'
 import { Activity, Target, TrendingUp, TrendingDown, Zap, Flame, Trophy, AlertTriangle } from 'lucide-react'
 import type { Trade, UserSettings } from '../types'
+import { fmtPnl } from '../lib/format'
 
 interface Props { trades: Trade[]; userSettings?: UserSettings | null; onAdd?: () => void }
 
@@ -122,7 +123,7 @@ export default function DashboardPage({ trades, userSettings, onAdd }: Props) {
         {[
           { label: 'Total Trades',  val: String(st.n),                                            sub: 'all time',                             color: '#00e5ff', Icon: Activity    },
           { label: 'Win Rate',      val: st.wr + '%',                                             sub: `${st.wins}W · ${st.losses}L · ${st.be}BE`, color: '#22c55e', Icon: Target  },
-          { label: 'Net P&L',       val: (isUp ? '+' : '') + '$' + Math.abs(st.pl).toFixed(2),   sub: 'realized',                             color: isUp ? '#22c55e' : '#ef4444', Icon: isUp ? TrendingUp : TrendingDown },
+          { label: 'Net P&L',       val: fmtPnl(st.pl),                                           sub: 'realized',                             color: isUp ? '#22c55e' : '#ef4444', Icon: isUp ? TrendingUp : TrendingDown },
           { label: 'Profit Factor', val: st.pf,                                                   sub: 'Avg R:R  1:' + st.avgRR,              color: '#a855f7', Icon: Zap         },
         ].map(({ label, val, sub, color, Icon }) => (
           <div key={label} className="card p-5 relative overflow-hidden">
@@ -151,12 +152,12 @@ export default function DashboardPage({ trades, userSettings, onAdd }: Props) {
           },
           {
             label: 'Best Trade', icon: Trophy, iconColor: '#22c55e', bg: 'rgba(34,197,94,0.1)',
-            val: <span className="text-2xl font-bold text-green">{st.best && st.best.pnl > 0 ? `+$${st.best.pnl.toFixed(2)}` : '—'}</span>,
+            val: <span className="text-2xl font-bold text-green">{st.best && st.best.pnl > 0 ? fmtPnl(st.best.pnl) : '—'}</span>,
             sub: st.best && st.best.pnl > 0 ? `${st.best.pair} · ${st.best.date}` : null,
           },
           {
             label: 'Worst Trade', icon: AlertTriangle, iconColor: '#ef4444', bg: 'rgba(239,68,68,0.1)',
-            val: <span className="text-2xl font-bold text-red">{st.worst && st.worst.pnl < 0 ? `-$${Math.abs(st.worst.pnl).toFixed(2)}` : '—'}</span>,
+            val: <span className="text-2xl font-bold text-red">{st.worst && st.worst.pnl < 0 ? fmtPnl(st.worst.pnl) : '—'}</span>,
             sub: st.worst && st.worst.pnl < 0 ? `${st.worst.pair} · ${st.worst.date}` : null,
           },
         ].map(({ label, icon: Icon, iconColor, bg, val, sub }) => (
@@ -179,7 +180,7 @@ export default function DashboardPage({ trades, userSettings, onAdd }: Props) {
           <div className="flex items-center justify-between mb-4">
             <div className="font-semibold text-sm text-zinc-200">Equity Curve</div>
             <span className="text-xs font-mono px-2.5 py-1 rounded-lg" style={{ background: isUp ? 'rgba(34,197,94,0.12)' : 'rgba(239,68,68,0.12)', color: isUp ? '#22c55e' : '#ef4444' }}>
-              {isUp ? '+' : ''}${st.pl.toFixed(2)}
+              {fmtPnl(st.pl)}
             </span>
           </div>
           <ResponsiveContainer width="100%" height={160}>

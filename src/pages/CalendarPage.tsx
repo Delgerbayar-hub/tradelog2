@@ -2,6 +2,7 @@
 import { useState, useMemo } from 'react'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import type { Trade, UserSettings } from '../types'
+import { fmtPnl } from '../lib/format'
 import clsx from 'clsx'
 
 const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December']
@@ -61,11 +62,7 @@ export default function CalendarPage({ trades, onAdd, userSettings }: Props) {
   const fmtDate = (ds: string) =>
     new Date(ds + 'T00:00:00').toLocaleDateString('mn-MN', { month: 'long', day: 'numeric', weekday: 'long' })
 
-  const pnlStr = (pl: number) => {
-    const abs = Math.abs(pl)
-    const s = abs >= 1000 ? '$' + (abs/1000).toFixed(1) + 'k' : '$' + abs.toFixed(2)
-    return (pl >= 0 ? '+' : '-') + s
-  }
+  const pnlStr = (pl: number) => fmtPnl(pl)
 
   return (
     <>
@@ -142,7 +139,7 @@ export default function CalendarPage({ trades, onAdd, userSettings }: Props) {
         <div className="text-center">
           <span className="text-xl font-bold font-mono text-white">Monthly P/L: </span>
           <span className={`text-xl font-bold font-mono ${mPL >= 0 ? 'text-green' : 'text-red'}`}>
-            {mPL >= 0 ? '+' : '-'}${Math.abs(mPL).toFixed(2)}
+            {fmtPnl(mPL)}
           </span>
         </div>
 
@@ -217,7 +214,7 @@ export default function CalendarPage({ trades, onAdd, userSettings }: Props) {
                           'text-[17px] font-bold font-mono leading-none',
                           weekPL > 0 ? 'text-green' : weekPL < 0 ? 'text-red' : 'text-zinc-500'
                         )}>
-                          {weekPL >= 0 ? '+' : '-'}${Math.abs(weekPL).toFixed(2)}
+                          {fmtPnl(weekPL)}
                         </span>
                         <span className="text-[10px] text-zinc-600">{weekCount} trades</span>
                       </div>
@@ -252,9 +249,7 @@ export default function CalendarPage({ trades, onAdd, userSettings }: Props) {
                             'text-[22px] font-bold font-mono leading-none',
                             pl > 0 ? 'text-green' : pl < 0 ? 'text-red' : 'text-yellow'
                           )}>
-                            {pl >= 0 ? '+' : '-'}${Math.abs(pl) >= 1000
-                              ? (Math.abs(pl)/1000).toFixed(1)+'k'
-                              : Math.abs(pl).toFixed(2)}
+                            {fmtPnl(pl)}
                           </span>
                           <span className="text-[11px] text-zinc-500">{dt.length} trades</span>
                         </div>
