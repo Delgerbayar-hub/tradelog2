@@ -1,6 +1,6 @@
 // src/components/TradeModal.tsx
 import { useState, useRef, useEffect } from 'react';
-import { X, Upload, ChevronDown, TrendingUp, TrendingDown } from 'lucide-react';
+import { X, Upload, ChevronDown, TrendingUp, TrendingDown, Clipboard } from 'lucide-react';
 import { Trade, UserSettings } from '../types';
 
 type FormData = Omit<Trade, 'id' | 'userId' | 'createdAt' | 'updatedAt'>;
@@ -118,6 +118,27 @@ export default function TradeModal({ isOpen, onClose, onSave, editTrade, userSet
   const removeImage = (field: 'screenshotBefore' | 'screenshotAfter', idx: number) => {
     setForm(prev => ({ ...prev, [field]: prev[field].filter((_, i) => i !== idx) }));
   };
+
+  // Paste image from clipboard (Ctrl+V)
+  useEffect(() => {
+    if (!isOpen) return;
+    const handlePaste = (e: ClipboardEvent) => {
+      const items = Array.from(e.clipboardData?.items || []);
+      const imgItem = items.find(i => i.type.startsWith('image/'));
+      if (!imgItem) return;
+      const file = imgItem.getAsFile();
+      if (!file) return;
+      const field = step === 'entry' ? 'screenshotBefore' : 'screenshotAfter';
+      const reader = new FileReader();
+      reader.onload = ev => {
+        const result = ev.target?.result as string;
+        setForm(p => p[field].length < 2 ? { ...p, [field]: [...p[field], result] } : p);
+      };
+      reader.readAsDataURL(file);
+    };
+    window.addEventListener('paste', handlePaste);
+    return () => window.removeEventListener('paste', handlePaste);
+  }, [isOpen, step]);
 
   const handleSubmit = () => {
     onSave(form);
@@ -642,13 +663,19 @@ function ImageUploader({
         </div>
       )}
       {validImages.length < 2 && (
-        <button
-          onClick={() => inputRef.current?.click()}
-          className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border ${accent} text-xs transition-colors ${labelAccent}`}
-        >
-          <Upload size={12} />
-          {validImages.length === 0 ? 'Зураг нэмэх' : 'Нэг зураг нэмэх'}
-        </button>
+        <div className="flex gap-2">
+          <div className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg border border-dashed ${accent} opacity-60`}>
+            <Clipboard size={12} className={labelAccent} />
+            <span className={`text-xs ${labelAccent}`}>Ctrl+V</span>
+          </div>
+          <button
+            onClick={() => inputRef.current?.click()}
+            className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg border border-dashed ${accent} transition-colors`}
+          >
+            <Upload size={12} className={labelAccent} />
+            <span className={`text-xs ${labelAccent}`}>Файл</span>
+          </button>
+        </div>
       )}
       <input
         ref={inputRef}
