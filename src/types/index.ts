@@ -13,15 +13,7 @@ export interface Trade {
   direction: 'buy' | 'sell';
   lotSize: number;
   session: 'Asia' | 'London' | 'New York' | 'London Close';
-  psychology: 
-    | 'Хэвийн'
-    | 'Шунах'
-    | 'Айх'
-    | 'Яарах'
-    | 'Өшөө авах'
-    | 'Эргэлзэх'
-    | 'Хэт итгэх'
-    | 'Уурлах';
+  psychology: string[];   // up to 3 items from PSYCHOLOGY list
   planExecution: 'Төлвөлгөөтэй' | 'Төлвөлгөөгүй';
   confidence: 'Дунд' | 'Өндөр' | 'Бага';
   riskPercent: number;

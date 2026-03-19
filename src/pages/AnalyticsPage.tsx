@@ -59,10 +59,13 @@ export default function AnalyticsPage({ trades }: Props) {
     // By emotion
     const emoMap: Record<string,{w:number;total:number;pl:number}> = {}
     trades.forEach(t => {
-      if(!emoMap[t.psychology]) emoMap[t.psychology]={w:0,total:0,pl:0}
-      emoMap[t.psychology].total++
-      if(t.result==='Win') emoMap[t.psychology].w++
-      emoMap[t.psychology].pl+=t.pnl
+      const psychList = Array.isArray(t.psychology) ? t.psychology : t.psychology ? [t.psychology as string] : [];
+      psychList.forEach(p => {
+        if(!emoMap[p]) emoMap[p]={w:0,total:0,pl:0}
+        emoMap[p].total++
+        if(t.result==='Win') emoMap[p].w++
+        emoMap[p].pl+=t.pnl
+      })
     })
     const emotions = Object.entries(emoMap)
       .map(([e,d])=>({ e, wr:+((d.w/d.total)*100).toFixed(1), total:d.total, pl:+d.pl.toFixed(2) }))

@@ -17,11 +17,70 @@ interface TradeModalProps {
 const DEFAULT_PAIRS = ['XAUUSD', 'EURUSD', 'GBPUSD', 'USDJPY', 'NASDAQ'];
 
 const SESSIONS = ['Asia', 'London', 'New York', 'London Close'] as const;
-const PSYCHOLOGY = ['Хэвийн','Шунах','Айх','Яарах','Өшөө авах','Эргэлзэх','Хэт итгэх','Уурлах'] as const;
+const PSYCHOLOGY = [
+  'Хэвийн','Шунах','Айх','Яарах','Өшөө авах','Эргэлзэх','Хэт итгэх','Уурлах',
+  'Боломж алдахаас айх','Дүрэм зөрчих','Ядарсан','Уйдсан',
+  'Анхаарал сарнисан','Хэтэрхий их сэтгэл хөдөлсөн',
+] as const;
 const RR_RATIOS = ['1:1','1:2','1:3','1:4','1:5','1:6','1:7','1:8','1:9','1:10'] as const;
 const CONFIDENCE = ['Бага','Дунд','Өндөр'] as const;
 
 type Step = 'entry' | 'exit';
+
+function PsychologyDropdown({ selected, onChange }: { selected: string[]; onChange: (v: string[]) => void }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false); };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  const toggle = (p: string) => {
+    if (selected.includes(p)) onChange(selected.filter(x => x !== p));
+    else if (selected.length < 3) onChange([...selected, p]);
+  };
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen(o => !o)}
+        className="w-full flex items-center justify-between px-3 py-2 bg-bg3 border border-border rounded-lg text-sm text-left hover:border-accent/50 transition-colors"
+      >
+        <span className={selected.length ? 'text-zinc-200' : 'text-muted'}>
+          {selected.length ? selected.join(', ') : 'Сонгоно уу...'}
+        </span>
+        <ChevronDown size={13} className={`text-muted shrink-0 ml-2 transition-transform ${open ? 'rotate-180' : ''}`} />
+      </button>
+      {open && (
+        <div className="absolute z-50 mt-1 w-full bg-bg2 border border-border rounded-lg shadow-xl py-1 max-h-52 overflow-y-auto">
+          {PSYCHOLOGY.map(p => {
+            const sel = selected.includes(p);
+            const maxed = !sel && selected.length >= 3;
+            return (
+              <button
+                key={p}
+                type="button"
+                disabled={maxed}
+                onClick={() => toggle(p)}
+                className={`w-full text-left px-3 py-1.5 text-[12px] flex items-center gap-2 transition-colors ${
+                  sel ? 'text-accent bg-accent/10' : maxed ? 'text-muted opacity-40 cursor-not-allowed' : 'text-zinc-300 hover:bg-bg3'
+                }`}
+              >
+                <span className={`w-3.5 h-3.5 rounded border flex items-center justify-center shrink-0 ${sel ? 'bg-accent border-accent' : 'border-border'}`}>
+                  {sel && <span className="text-black text-[9px] font-bold">✓</span>}
+                </span>
+                {p}
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function TradeModal({ isOpen, onClose, onSave, editTrade, userSettings }: TradeModalProps) {
   const pairs           = userSettings?.pairs?.length ? userSettings.pairs : DEFAULT_PAIRS;
@@ -34,7 +93,7 @@ export default function TradeModal({ isOpen, onClose, onSave, editTrade, userSet
     direction: 'buy' as const,
     lotSize: 0.01,
     session: 'London' as const,
-    psychology: 'Хэвийн' as const,
+    psychology: [] as string[],
     planExecution: 'Төлвөлгөөтэй' as const,
     confidence: 'Дунд' as const,
     riskPercent: 1,
@@ -67,7 +126,7 @@ export default function TradeModal({ isOpen, onClose, onSave, editTrade, userSet
         direction: editTrade.direction,
         lotSize: editTrade.lotSize,
         session: editTrade.session,
-        psychology: editTrade.psychology,
+        psychology: Array.isArray(editTrade.psychology) ? editTrade.psychology : editTrade.psychology ? [editTrade.psychology as string] : [],
         planExecution: editTrade.planExecution,
         confidence: editTrade.confidence,
         riskPercent: editTrade.riskPercent,
@@ -322,11 +381,10 @@ export default function TradeModal({ isOpen, onClose, onSave, editTrade, userSet
 
                 {/* Psychology + Plan Execution */}
                 <div className="grid grid-cols-2 gap-4">
-                  <Field label="Psychology">
-                    <Select
-                      value={form.psychology}
-                      onChange={v => set('psychology', v as typeof form.psychology)}
-                      options={[...PSYCHOLOGY]}
+                  <Field label={`Сэтгэл зүй (${form.psychology.length}/3)`}>
+                    <PsychologyDropdown
+                      selected={form.psychology}
+                      onChange={v => set('psychology', v)}
                     />
                   </Field>
                   <Field label="Plan Execution">

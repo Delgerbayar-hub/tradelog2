@@ -279,7 +279,9 @@ export default function TradesPage({
                               ))}
                               {/* Psychology badges */}
                               <div className="col-span-2 flex flex-wrap gap-1.5 mt-1">
-                                {trade.psychology && <span className="text-[11px] bg-bg3 border border-border px-2 py-0.5 rounded-full text-zinc-300">{trade.psychology}</span>}
+                                {(Array.isArray(trade.psychology) ? trade.psychology : trade.psychology ? [trade.psychology as string] : []).map((p: string) => (
+                                  <span key={p} className="text-[11px] bg-accent/10 border border-accent/30 px-2 py-0.5 rounded-full text-accent">{p}</span>
+                                ))}
                                 {trade.planExecution && <span className="text-[11px] bg-bg3 border border-border px-2 py-0.5 rounded-full text-zinc-300">{trade.planExecution}</span>}
                                 {trade.confidence && <span className="text-[11px] bg-bg3 border border-border px-2 py-0.5 rounded-full text-zinc-300">{trade.confidence}</span>}
                               </div>
