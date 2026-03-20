@@ -52,6 +52,7 @@ function AddPairModal({ onClose, onSave, existing }: {
     const val = input.trim().toUpperCase();
     if (!val) return setError('Pair оруулна уу');
     if (existing.includes(val)) return setError('Аль хэдийн байна');
+    if (existing.length >= 10) return setError('Хамгийн ихдээ 10 pair нэмэх боломжтой');
     onSave(val); onClose();
   };
   return (
@@ -333,9 +334,9 @@ export default function ProfilePage({ user, userSettings, trades, onUpdateSettin
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-primary font-semibold text-[15px]">Арилжааны Pair</h2>
-              <p className="text-muted text-xs mt-0.5">Trade бүртгэхэд харагдах · {pairs.length} pair</p>
+              <p className="text-muted text-xs mt-0.5">Trade бүртгэхэд харагдах · {pairs.length}/10</p>
             </div>
-            <button onClick={() => setShowAddPair(true)} className="btn-primary text-xs px-3 py-1.5">
+            <button onClick={() => setShowAddPair(true)} disabled={pairs.length >= 10} className="btn-primary text-xs px-3 py-1.5 disabled:opacity-40 disabled:cursor-not-allowed">
               <Plus size={13} /> Нэмэх
             </button>
           </div>
