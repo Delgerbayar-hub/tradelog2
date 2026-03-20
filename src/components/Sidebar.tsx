@@ -35,7 +35,7 @@ export default function Sidebar({ accounts, activeId, onSwitch, onAdd, onEdit, b
             <polyline points="16 7 22 7 22 13"/>
           </svg>
         </div>
-        <span className="font-semibold text-[15px] text-zinc-100 tracking-tight">TradeLog</span>
+        <span className="font-semibold text-[15px] text-primary tracking-tight">TradeLog</span>
       </div>
 
       {/* Accounts */}
@@ -52,14 +52,14 @@ export default function Sidebar({ accounts, activeId, onSwitch, onAdd, onEdit, b
                 <div className="flex items-center gap-2 min-w-0">
                   <div className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: a.color }}/>
                   <div className="min-w-0">
-                    <div className={clsx('text-[12.5px] font-medium truncate', isActive ? 'text-accent' : 'text-zinc-300')}>{a.name}</div>
+                    <div className={clsx('text-[12.5px] font-medium truncate', isActive ? 'text-accent' : 'text-secondary')}>{a.name}</div>
                     <div className={clsx('font-mono text-[10px]', isActive ? 'text-accent/70' : 'text-muted')}>
                       ${bal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </div>
                   </div>
                 </div>
                 <button onClick={e => { e.stopPropagation(); onEdit(a) }}
-                  className="opacity-0 group-hover:opacity-100 text-muted hover:text-zinc-300 transition-all p-0.5">
+                  className="opacity-0 group-hover:opacity-100 text-muted hover:text-secondary transition-all p-0.5">
                   <Pencil size={10}/>
                 </button>
               </div>
@@ -88,7 +88,7 @@ export default function Sidebar({ accounts, activeId, onSwitch, onAdd, onEdit, b
         <div className="flex items-center gap-2.5">
           {user?.photoURL && <img src={user.photoURL} className="w-7 h-7 rounded-full shrink-0" alt=""/>}
           <div className="flex-1 min-w-0">
-            <div className="text-[12px] font-medium text-zinc-300 truncate">{user?.displayName || 'Trader'}</div>
+            <div className="text-[12px] font-medium text-secondary truncate">{user?.displayName || 'Trader'}</div>
             <div className="text-[10px] text-muted truncate" style={{ color: active?.color }}>{active?.name || '—'}</div>
           </div>
           <button onClick={logout} className="btn-icon !p-1.5" title="Sign out"><LogOut size={12}/></button>

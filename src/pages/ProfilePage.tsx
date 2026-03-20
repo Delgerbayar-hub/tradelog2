@@ -27,8 +27,8 @@ function Modal({ title, onClose, onSave, saveLabel = 'Нэмэх', children }: {
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
         <div className="bg-bg2 border border-border2 rounded-2xl w-full max-w-sm shadow-2xl">
           <div className="flex items-center justify-between px-6 py-4 border-b border-border">
-            <h2 className="text-white font-semibold text-[15px]">{title}</h2>
-            <button onClick={onClose} className="text-muted hover:text-white transition-colors p-1">
+            <h2 className="text-primary font-semibold text-[15px]">{title}</h2>
+            <button onClick={onClose} className="text-muted hover:text-primary transition-colors p-1">
               <X size={18} />
             </button>
           </div>
@@ -93,7 +93,7 @@ function AddAccountModal({ onClose, onSave, existing }: {
     Personal:  'bg-blue-500/15 text-blue-400 border-blue-500/30',
     Challenge: 'bg-yellow-500/15 text-yellow-400 border-yellow-500/30',
     Funded:    'bg-green-500/15 text-green-400 border-green-500/30',
-    Demo:      'bg-zinc-500/15 text-zinc-400 border-zinc-500/30',
+    Demo:      'bg-zinc-500/15 text-secondary border-zinc-500/30',
     Contest:   'bg-purple-500/15 text-purple-400 border-purple-500/30',
   };
 
@@ -237,7 +237,7 @@ export default function ProfilePage({ user, userSettings, trades, onUpdateSettin
               style={{ backgroundImage: 'linear-gradient(rgba(255,255,255,1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,1) 1px, transparent 1px)', backgroundSize: '32px 32px' }} />
             {!editing && (
               <button onClick={startEdit}
-                className="absolute top-3 right-3 flex items-center gap-1.5 text-xs text-zinc-400 hover:text-white transition-colors px-3 py-1.5 rounded-lg backdrop-blur-sm"
+                className="absolute top-3 right-3 flex items-center gap-1.5 text-xs text-secondary hover:text-primary transition-colors px-3 py-1.5 rounded-lg backdrop-blur-sm"
                 style={{ background: 'rgba(0,0,0,0.45)', border: '1px solid rgba(255,255,255,0.08)' }}>
                 <Pencil size={11} /> Засах
               </button>
@@ -253,8 +253,8 @@ export default function ProfilePage({ user, userSettings, trades, onUpdateSettin
                     <Avatar src={editAvatar} name={editName || displayName} size="w-24 h-24" />
                     <button onClick={() => avatarRef.current?.click()}
                       className="absolute inset-0 rounded-2xl bg-black/60 flex flex-col items-center justify-center gap-1 opacity-0 hover:opacity-100 transition-opacity">
-                      <Camera size={16} className="text-white" />
-                      <span className="text-white text-[10px] font-medium">Солих</span>
+                      <Camera size={16} className="text-primary" />
+                      <span className="text-primary text-[10px] font-medium">Солих</span>
                     </button>
                     <input ref={avatarRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarFile} />
                   </div>
@@ -288,7 +288,7 @@ export default function ProfilePage({ user, userSettings, trades, onUpdateSettin
                 <div className="relative z-10 flex items-end gap-4 -mt-14 mb-5">
                   <Avatar src={displayAvatar} name={displayName} size="w-24 h-24" />
                   <div className="pb-1.5 flex-1 min-w-0">
-                    <p className="text-white text-2xl font-bold tracking-tight truncate">{displayName}</p>
+                    <p className="text-primary text-2xl font-bold tracking-tight truncate">{displayName}</p>
                     <p className="text-muted text-sm truncate">{user.email}</p>
                   </div>
                 </div>
@@ -297,11 +297,11 @@ export default function ProfilePage({ user, userSettings, trades, onUpdateSettin
                   <div className="flex items-start gap-2.5 rounded-xl px-4 py-3 mb-5"
                     style={{ background: 'rgba(0,229,255,0.05)', border: '1px solid rgba(0,229,255,0.12)' }}>
                     <Quote size={13} className="text-accent shrink-0 mt-0.5" />
-                    <p className="text-zinc-300 text-sm leading-relaxed italic">{displayBio}</p>
+                    <p className="text-secondary text-sm leading-relaxed italic">{displayBio}</p>
                   </div>
                 ) : (
                   <button onClick={startEdit}
-                    className="mb-5 w-full flex items-center gap-2 text-muted text-sm italic hover:text-zinc-400 transition-colors px-3 py-2 rounded-lg border border-dashed border-border hover:border-border2">
+                    className="mb-5 w-full flex items-center gap-2 text-muted text-sm italic hover:text-secondary transition-colors px-3 py-2 rounded-lg border border-dashed border-border hover:border-border2">
                     <Quote size={12} /> Ишлэл нэмэх...
                   </button>
                 )}
@@ -332,7 +332,7 @@ export default function ProfilePage({ user, userSettings, trades, onUpdateSettin
         <div className="card p-5 space-y-4">
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="text-white font-semibold text-[15px]">Арилжааны Pair</h2>
+              <h2 className="text-primary font-semibold text-[15px]">Арилжааны Pair</h2>
               <p className="text-muted text-xs mt-0.5">Trade бүртгэхэд харагдах · {pairs.length} pair</p>
             </div>
             <button onClick={() => setShowAddPair(true)} className="btn-primary text-xs px-3 py-1.5">
@@ -353,7 +353,7 @@ export default function ProfilePage({ user, userSettings, trades, onUpdateSettin
             ))}
             {pairs.length === 0 && (
               <button onClick={() => setShowAddPair(true)}
-                className="text-muted text-sm italic hover:text-zinc-400 transition-colors">
+                className="text-muted text-sm italic hover:text-secondary transition-colors">
                 + Pair нэмэх...
               </button>
             )}
@@ -364,7 +364,7 @@ export default function ProfilePage({ user, userSettings, trades, onUpdateSettin
         <div className="space-y-3">
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="text-white font-semibold text-[15px]">Арилжааны Данснууд</h2>
+              <h2 className="text-primary font-semibold text-[15px]">Арилжааны Данснууд</h2>
               <p className="text-muted text-xs mt-0.5">
                 {accounts.filter(a => a.active !== false).length} идэвхтэй
                 {accounts.some(a => a.active === false) && ` · ${accounts.filter(a => a.active === false).length} идэвхгүй`}
@@ -374,7 +374,7 @@ export default function ProfilePage({ user, userSettings, trades, onUpdateSettin
               <div className="flex rounded-lg border border-border overflow-hidden text-xs">
                 {([['active','Идэвхтэй'],['inactive','Идэвхгүй'],['archived','Архив']] as [AccountStatus,string][]).map(([f,label]) => (
                   <button key={f} onClick={() => setAccountFilter(f)}
-                    className={`px-3 py-1.5 transition-colors ${accountFilter === f ? 'bg-accent/15 text-accent' : 'text-muted hover:text-zinc-300'}`}>
+                    className={`px-3 py-1.5 transition-colors ${accountFilter === f ? 'bg-accent/15 text-accent' : 'text-muted hover:text-secondary'}`}>
                     {label}
                   </button>
                 ))}
@@ -396,7 +396,7 @@ export default function ProfilePage({ user, userSettings, trades, onUpdateSettin
                 <Wallet size={22} className="text-accent" />
               </div>
               <div>
-                <p className="text-white font-medium">Данс байхгүй байна</p>
+                <p className="text-primary font-medium">Данс байхгүй байна</p>
                 <p className="text-muted text-sm mt-1">Арилжааны данс нэмж эхлэнэ үү</p>
               </div>
               <button onClick={() => setShowAddAccount(true)} className="btn-primary mx-auto mt-2" disabled={accounts.length >= 5}>
@@ -438,17 +438,17 @@ export default function ProfilePage({ user, userSettings, trades, onUpdateSettin
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
                         style={{ background: isUp ? 'rgba(34,197,94,0.1)' : 'rgba(239,68,68,0.1)', border: `1px solid ${isUp ? 'rgba(34,197,94,0.2)' : 'rgba(239,68,68,0.2)'}` }}>
-                        {isUp ? <TrendingUp size={17} className="text-green" /> : <TrendingDown size={17} className="text-red" />}
+                        {isUp ? <TrendingUp size={17} className="text-profit" /> : <TrendingDown size={17} className="text-loss" />}
                       </div>
                       <div>
                         <div className="flex items-center gap-2">
-                          <p className="text-white font-bold leading-tight">{acc.name}</p>
+                          <p className="text-primary font-bold leading-tight">{acc.name}</p>
                           {acc.type && (
                             <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-md border ${
                               acc.type === 'Personal'  ? 'bg-blue-500/15 text-blue-400 border-blue-500/30' :
                               acc.type === 'Challenge' ? 'bg-yellow-500/15 text-yellow-400 border-yellow-500/30' :
                               acc.type === 'Funded'    ? 'bg-green-500/15 text-green-400 border-green-500/30' :
-                              acc.type === 'Demo'      ? 'bg-zinc-500/15 text-zinc-400 border-zinc-500/30' :
+                              acc.type === 'Demo'      ? 'bg-zinc-500/15 text-secondary border-zinc-500/30' :
                                                          'bg-purple-500/15 text-purple-400 border-purple-500/30'
                             }`}>{acc.type}</span>
                           )}
@@ -458,7 +458,7 @@ export default function ProfilePage({ user, userSettings, trades, onUpdateSettin
                     </div>
                     <div className="flex items-center gap-2">
                       {accStatus !== 'active' && (
-                        <span className="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-zinc-700/60 text-zinc-400 border border-zinc-600/50">
+                        <span className="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-zinc-700/60 text-secondary border border-zinc-600/50">
                           {accStatus === 'archived' ? 'Архив' : 'Идэвхгүй'}
                         </span>
                       )}
@@ -469,14 +469,14 @@ export default function ProfilePage({ user, userSettings, trades, onUpdateSettin
                       {/* Overflow menu */}
                       <div className="relative">
                         <button onClick={e => { e.stopPropagation(); setOpenMenuName(menuOpen ? null : acc.name); }}
-                          className="p-1.5 rounded-lg text-muted hover:text-zinc-200 hover:bg-bg3 transition-colors">
+                          className="p-1.5 rounded-lg text-muted hover:text-primary hover:bg-bg3 transition-colors">
                           <MoreHorizontal size={14} />
                         </button>
                         {menuOpen && (
                           <div className="absolute right-0 top-8 z-30 bg-bg2 border border-border2 rounded-xl shadow-2xl w-44 py-1 text-sm">
                             {accStatus !== 'active'   && <button onClick={() => setStatus('active')}   className="flex items-center gap-2.5 w-full px-3 py-2 hover:bg-bg3 text-green"><Zap size={13}/> Идэвхжүүлэх</button>}
-                            {accStatus !== 'inactive' && <button onClick={() => setStatus('inactive')} className="flex items-center gap-2.5 w-full px-3 py-2 hover:bg-bg3 text-zinc-300"><ZapOff size={13}/> Идэвхгүй болгох</button>}
-                            {accStatus !== 'archived' && <button onClick={() => setStatus('archived')} className="flex items-center gap-2.5 w-full px-3 py-2 hover:bg-bg3 text-zinc-400"><Archive size={13}/> Архивлах</button>}
+                            {accStatus !== 'inactive' && <button onClick={() => setStatus('inactive')} className="flex items-center gap-2.5 w-full px-3 py-2 hover:bg-bg3 text-secondary"><ZapOff size={13}/> Идэвхгүй болгох</button>}
+                            {accStatus !== 'archived' && <button onClick={() => setStatus('archived')} className="flex items-center gap-2.5 w-full px-3 py-2 hover:bg-bg3 text-secondary"><Archive size={13}/> Архивлах</button>}
                           </div>
                         )}
                       </div>
@@ -487,14 +487,14 @@ export default function ProfilePage({ user, userSettings, trades, onUpdateSettin
                   <div className="grid grid-cols-3 gap-2.5 mb-4">
                     <div className="bg-bg3 rounded-xl p-3.5">
                       <p className="text-[10px] text-muted uppercase tracking-widest mb-2">Win Rate</p>
-                      <p className={`text-2xl font-bold font-mono leading-none ${wr === null ? 'text-muted' : wr >= 50 ? 'text-green' : 'text-red'}`}>
+                      <p className={`text-2xl font-bold font-mono leading-none ${wr === null ? 'text-muted' : wr >= 50 ? 'text-profit' : 'text-loss'}`}>
                         {wr !== null ? wr.toFixed(0) + '%' : '—'}
                       </p>
                       <p className="text-[11px] text-muted mt-1.5">{wins}W · {accTrades.length - wins}L</p>
                     </div>
                     <div className="bg-bg3 rounded-xl p-3.5">
                       <p className="text-[10px] text-muted uppercase tracking-widest mb-2">Balance</p>
-                      <p className={`text-2xl font-bold font-mono leading-none ${isUp ? 'text-green' : 'text-red'}`}>
+                      <p className={`text-2xl font-bold font-mono leading-none ${isUp ? 'text-profit' : 'text-loss'}`}>
                         {fmtBalance(current)}
                       </p>
                       <p className="text-[11px] text-muted mt-1.5">эхлэл {fmtBalance(acc.balance)}</p>

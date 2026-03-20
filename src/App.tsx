@@ -56,13 +56,13 @@ export default function App() {
         <div className="flex items-center justify-between px-3 mb-7">
           {!collapsed && (
             <div className="px-1">
-              <span className="text-white font-bold text-lg tracking-tight">Trade</span>
+              <span className="text-primary font-bold text-lg tracking-tight">Trade</span>
               <span className="text-accent font-bold text-lg">Log</span>
             </div>
           )}
           <button
             onClick={() => setCollapsed(c => !c)}
-            className={`w-7 h-7 rounded-lg bg-bg3 border border-border flex items-center justify-center text-muted hover:text-zinc-200 transition-colors shrink-0 ${collapsed ? 'mx-auto' : ''}`}
+            className={`w-7 h-7 rounded-lg bg-bg3 border border-border flex items-center justify-center text-muted hover:text-primary transition-colors shrink-0 ${collapsed ? 'mx-auto' : ''}`}
           >
             {collapsed ? <ChevronRight size={13} /> : <ChevronLeft size={13} />}
           </button>

@@ -49,7 +49,7 @@ function PsychologyDropdown({ selected, onChange }: { selected: string[]; onChan
         onClick={() => setOpen(o => !o)}
         className="w-full flex items-center justify-between px-3 py-2 bg-bg3 border border-border rounded-lg text-sm text-left hover:border-accent/50 transition-colors"
       >
-        <span className={selected.length ? 'text-zinc-200' : 'text-muted'}>
+        <span className={selected.length ? 'text-primary' : 'text-muted'}>
           {selected.length ? selected.join(', ') : 'Сонгоно уу...'}
         </span>
         <ChevronDown size={13} className={`text-muted shrink-0 ml-2 transition-transform ${open ? 'rotate-180' : ''}`} />
@@ -66,7 +66,7 @@ function PsychologyDropdown({ selected, onChange }: { selected: string[]; onChan
                 disabled={maxed}
                 onClick={() => toggle(p)}
                 className={`w-full text-left px-3 py-1.5 text-[12px] flex items-center gap-2 transition-colors ${
-                  sel ? 'text-accent bg-accent/10' : maxed ? 'text-muted opacity-40 cursor-not-allowed' : 'text-zinc-300 hover:bg-bg3'
+                  sel ? 'text-accent bg-accent/10' : maxed ? 'text-muted opacity-40 cursor-not-allowed' : 'text-secondary hover:bg-bg3'
                 }`}
               >
                 <span className={`w-3.5 h-3.5 rounded border flex items-center justify-center shrink-0 ${sel ? 'bg-accent border-accent' : 'border-border'}`}>
@@ -151,7 +151,7 @@ export default function TradeModal({ isOpen, onClose, onSave, editTrade, userSet
 
   // Auto-compute Profit/Loss/Breakeven label from pnl
   const pnlLabel = form.pnl > 0 ? 'Profit' : form.pnl < 0 ? 'Loss' : 'Breakeven';
-  const pnlColor = form.pnl > 0 ? 'text-green' : form.pnl < 0 ? 'text-red' : 'text-yellow';
+  const pnlColor = form.pnl > 0 ? 'text-profit' : form.pnl < 0 ? 'text-loss' : 'text-yellow';
 
   const set = <K extends keyof typeof form>(key: K, value: typeof form[K]) =>
     setForm(prev => ({ ...prev, [key]: value }));
@@ -229,7 +229,7 @@ export default function TradeModal({ isOpen, onClose, onSave, editTrade, userSet
           {/* Header */}
           <div className="flex items-center justify-between px-6 py-4 border-b border-border">
             <div className="flex items-center gap-3">
-              <h2 className="text-white font-semibold text-lg">
+              <h2 className="text-primary font-semibold text-lg">
                 {editTrade ? 'Trade засах' : 'Trade бүртгэх'}
               </h2>
               {/* Step tabs */}
@@ -239,7 +239,7 @@ export default function TradeModal({ isOpen, onClose, onSave, editTrade, userSet
                   className={`px-3 py-1 rounded-md text-xs font-medium transition-all ${
                     step === 'entry'
                       ? 'bg-accent text-black'
-                      : 'text-muted hover:text-white'
+                      : 'text-muted hover:text-primary'
                   }`}
                 >
                   Entry
@@ -248,15 +248,15 @@ export default function TradeModal({ isOpen, onClose, onSave, editTrade, userSet
                   onClick={() => setStep('exit')}
                   className={`px-3 py-1 rounded-md text-xs font-medium transition-all ${
                     step === 'exit'
-                      ? 'bg-purple text-white'
-                      : 'text-muted hover:text-white'
+                      ? 'bg-purple text-primary'
+                      : 'text-muted hover:text-primary'
                   }`}
                 >
                   Exit
                 </button>
               </div>
             </div>
-            <button onClick={onClose} className="text-muted hover:text-white transition-colors">
+            <button onClick={onClose} className="text-muted hover:text-primary transition-colors">
               <X size={20} />
             </button>
           </div>
@@ -306,7 +306,7 @@ export default function TradeModal({ isOpen, onClose, onSave, editTrade, userSet
                         className={`px-3 py-1.5 rounded-lg text-sm font-mono font-medium transition-all border ${
                           form.pair === p
                             ? 'bg-accent border-accent text-black'
-                            : 'bg-bg3 border-border2 text-zinc-300 hover:border-muted'
+                            : 'bg-bg3 border-border2 text-secondary hover:border-muted'
                         }`}
                       >
                         {p}
@@ -594,15 +594,15 @@ export default function TradeModal({ isOpen, onClose, onSave, editTrade, userSet
 // ── Sub-components ──
 
 const inputCls =
-  'w-full bg-bg3 border border-border2 rounded-xl px-4 py-2.5 text-zinc-100 text-sm focus:outline-none focus:border-accent/50 transition-colors placeholder-muted';
+  'w-full bg-bg3 border border-border2 rounded-xl px-4 py-2.5 text-primary text-sm focus:outline-none focus:border-accent/50 transition-colors placeholder-muted';
 
 const btnSecondary =
-  'px-4 py-2 rounded-xl border border-border2 text-zinc-300 text-sm hover:bg-bg3 transition-all';
+  'px-4 py-2 rounded-xl border border-border2 text-secondary text-sm hover:bg-bg3 transition-all';
 
 const btnPrimary = (color: 'cyan' | 'purple') =>
   color === 'cyan'
     ? 'px-6 py-2 rounded-xl bg-accent text-black font-semibold text-sm hover:opacity-90 transition-all'
-    : 'px-6 py-2 rounded-xl bg-purple text-white font-semibold text-sm hover:opacity-90 transition-all';
+    : 'px-6 py-2 rounded-xl bg-purple text-primary font-semibold text-sm hover:opacity-90 transition-all';
 
 const MAX_VALUE = 1_000_000_000;
 
@@ -717,7 +717,7 @@ function ImageUploader({
                 onClick={() => onRemove(idx)}
                 className="absolute top-1 right-1 bg-black/70 rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity"
               >
-                <X size={10} className="text-white" />
+                <X size={10} className="text-primary" />
               </button>
             </div>
           ))}

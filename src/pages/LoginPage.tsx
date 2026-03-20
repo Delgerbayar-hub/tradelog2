@@ -76,13 +76,13 @@ export default function LoginPage() {
               <polyline points="16 7 22 7 22 13"/>
             </svg>
           </div>
-          <span className="text-xl font-semibold text-zinc-100 tracking-tight">TradeLog</span>
+          <span className="text-xl font-semibold text-primary tracking-tight">TradeLog</span>
         </div>
 
         <div className="card p-7 space-y-5">
           {/* Title */}
           <div>
-            <h1 className="text-lg font-semibold text-zinc-100">
+            <h1 className="text-lg font-semibold text-primary">
               {mode === 'login'    && 'Нэвтрэх'}
               {mode === 'register' && 'Бүртгүүлэх'}
               {mode === 'reset'    && 'Нууц үг сэргээх'}
@@ -132,7 +132,7 @@ export default function LoginPage() {
                   className="input pl-9 pr-10"
                 />
                 <button type="button" onClick={() => setShowPw(v => !v)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted hover:text-zinc-300 transition-colors">
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted hover:text-secondary transition-colors">
                   {showPw ? <EyeOff size={14} /> : <Eye size={14} />}
                 </button>
               </div>

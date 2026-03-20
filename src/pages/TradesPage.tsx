@@ -117,7 +117,7 @@ export default function TradesPage({
       <div className="p-6 space-y-5">
         {/* Top bar */}
         <div className="flex flex-wrap items-center gap-3 justify-between">
-          <h1 className="text-white text-xl font-semibold">Trades</h1>
+          <h1 className="text-primary text-xl font-semibold">Trades</h1>
           <div className="flex items-center gap-2 flex-wrap">
             {/* Search */}
             <div className="relative">
@@ -141,7 +141,7 @@ export default function TradesPage({
                     ? f === 'Win' ? 'bg-green/20 border-green text-green'
                     : f === 'Loss' ? 'bg-red/20 border-red text-red'
                     : f === 'Breakeven' ? 'bg-yellow/20 border-yellow text-yellow'
-                    : 'bg-bg3 border-border text-zinc-100'
+                    : 'bg-bg3 border-border text-primary'
                     : 'bg-bg3 border-border2 text-muted hover:border-muted'
                 }`}
               >
@@ -215,8 +215,8 @@ export default function TradesPage({
                       className="border-b border-border/50 hover:bg-bg3/40 transition-colors cursor-pointer"
                       onClick={() => setExpandedId(expandedId === trade.id ? null : trade.id)}
                     >
-                      <td className="px-4 py-3 text-zinc-300 whitespace-nowrap">{trade.date}</td>
-                      <td className="px-4 py-3 font-mono text-white font-medium">{trade.pair}</td>
+                      <td className="px-4 py-3 text-secondary whitespace-nowrap">{trade.date}</td>
+                      <td className="px-4 py-3 font-mono text-primary font-medium">{trade.pair}</td>
                       <td className="px-4 py-3">
                         {trade.direction === 'buy'
                           ? <span className="flex items-center gap-1 text-green"><TrendingUp size={13}/> BUY</span>
@@ -224,13 +224,13 @@ export default function TradesPage({
                         }
                       </td>
                       <td className="px-4 py-3 text-muted">{trade.session}</td>
-                      <td className="px-4 py-3 text-zinc-300 max-w-[120px] truncate">{trade.setup || '—'}</td>
-                      <td className="px-4 py-3 font-mono text-zinc-300">{trade.rrRatio}</td>
+                      <td className="px-4 py-3 text-secondary max-w-[120px] truncate">{trade.setup || '—'}</td>
+                      <td className="px-4 py-3 font-mono text-secondary">{trade.rrRatio}</td>
                       <td className="px-4 py-3">
                         <ResultBadge result={trade.result} />
                       </td>
                       <td className={`px-4 py-3 font-mono font-semibold ${
-                        trade.pnl > 0 ? 'text-green' : trade.pnl < 0 ? 'text-red' : 'text-yellow'
+                        trade.pnl > 0 ? 'text-profit' : trade.pnl < 0 ? 'text-loss' : 'text-yellow'
                       }`}>
                         {trade.pnl > 0 ? '+' : ''}{trade.pnl?.toFixed(2) ?? '0.00'}
                       </td>
@@ -274,7 +274,7 @@ export default function TradesPage({
                               ].filter(x => x.v).map(x => (
                                 <div key={x.l} className="bg-bg3 rounded-lg px-3 py-2">
                                   <div className="text-[10px] text-muted uppercase tracking-wider mb-0.5">{x.l}</div>
-                                  <div className="text-sm font-medium text-zinc-200">{x.v}</div>
+                                  <div className="text-sm font-medium text-primary">{x.v}</div>
                                 </div>
                               ))}
                               {/* Psychology badges */}
@@ -282,8 +282,8 @@ export default function TradesPage({
                                 {(Array.isArray(trade.psychology) ? trade.psychology : trade.psychology ? [trade.psychology as string] : []).map((p: string) => (
                                   <span key={p} className="text-[11px] bg-accent/10 border border-accent/30 px-2 py-0.5 rounded-full text-accent">{p}</span>
                                 ))}
-                                {trade.planExecution && <span className="text-[11px] bg-bg3 border border-border px-2 py-0.5 rounded-full text-zinc-300">{trade.planExecution}</span>}
-                                {trade.confidence && <span className="text-[11px] bg-bg3 border border-border px-2 py-0.5 rounded-full text-zinc-300">{trade.confidence}</span>}
+                                {trade.planExecution && <span className="text-[11px] bg-bg3 border border-border px-2 py-0.5 rounded-full text-secondary">{trade.planExecution}</span>}
+                                {trade.confidence && <span className="text-[11px] bg-bg3 border border-border px-2 py-0.5 rounded-full text-secondary">{trade.confidence}</span>}
                               </div>
                             </div>
 
@@ -292,13 +292,13 @@ export default function TradesPage({
                               {trade.entryDetails && (
                                 <div className="bg-bg3 rounded-lg p-3">
                                   <div className="text-[10px] text-accent uppercase tracking-wider mb-1">Entry Details</div>
-                                  <p className="text-sm text-zinc-300 leading-relaxed">{trade.entryDetails}</p>
+                                  <p className="text-sm text-secondary leading-relaxed">{trade.entryDetails}</p>
                                 </div>
                               )}
                               {trade.review && (
                                 <div className="bg-bg3 rounded-lg p-3">
                                   <div className="text-[10px] text-purple uppercase tracking-wider mb-1">Review</div>
-                                  <p className="text-sm text-zinc-300 leading-relaxed">{trade.review}</p>
+                                  <p className="text-sm text-secondary leading-relaxed">{trade.review}</p>
                                 </div>
                               )}
                             </div>
@@ -358,13 +358,13 @@ function StatsRow({ trades }: { trades: Trade[] }) {
   return (
     <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
       {[
-        { label: 'Нийт', value: total.toString(), color: 'text-white' },
-        { label: 'Win Rate', value: `${winRate}%`, color: 'text-green' },
-        { label: 'Win / Loss', value: `${wins} / ${losses}`, color: 'text-zinc-300' },
+        { label: 'Нийт', value: total.toString(), color: 'text-primary' },
+        { label: 'Win Rate', value: `${winRate}%`, color: 'text-profit' },
+        { label: 'Win / Loss', value: `${wins} / ${losses}`, color: 'text-secondary' },
         {
           label: 'Total PNL',
           value: `${totalPnl >= 0 ? '+' : ''}${totalPnl.toFixed(2)}`,
-          color: totalPnl >= 0 ? 'text-green' : 'text-red'
+          color: totalPnl >= 0 ? 'text-profit' : 'text-loss'
         },
       ].map(s => (
         <div key={s.label} className="card p-4 relative overflow-hidden">
@@ -393,7 +393,7 @@ function DetailRow({ label, value }: { label: string; value?: string }) {
   return (
     <div className="flex items-center gap-2">
       <span className="text-muted text-xs w-24 shrink-0">{label}</span>
-      <span className="text-zinc-300">{value}</span>
+      <span className="text-secondary">{value}</span>
     </div>
   );
 }

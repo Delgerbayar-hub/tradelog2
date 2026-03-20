@@ -113,10 +113,10 @@ export default function CalendarPage({ trades, onAdd, userSettings, onUpdateSett
             <div className="flex justify-between items-start p-5 border-b border-border">
               <div>
                 <div className="text-xs text-muted mb-0.5">Арилжааны жагсаалт</div>
-                <div className="font-semibold text-zinc-100">{fmtDate(popup.date)}</div>
+                <div className="font-semibold text-primary">{fmtDate(popup.date)}</div>
               </div>
               <button onClick={() => setPopup(null)}
-                className="w-7 h-7 rounded-full bg-bg3 flex items-center justify-center text-muted hover:text-zinc-200 transition-colors">×</button>
+                className="w-7 h-7 rounded-full bg-bg3 flex items-center justify-center text-muted hover:text-primary transition-colors">×</button>
             </div>
             {(() => {
               const pl   = popup.trades.reduce((s,t) => s+t.pnl, 0)
@@ -125,9 +125,9 @@ export default function CalendarPage({ trades, onAdd, userSettings, onUpdateSett
               return (
                 <div className="grid grid-cols-3 divide-x divide-border border-b border-border">
                   {[
-                    { l:'Нийт PNL', v: pnlStr(pl), c: pl>=0 ? 'text-green' : 'text-red' },
-                    { l:'Арилжаа',  v: String(popup.trades.length), c:'text-zinc-100' },
-                    { l:'Win Rate', v: wr+'%', c: wr>=50?'text-green':'text-red' },
+                    { l:'Нийт PNL', v: pnlStr(pl), c: pl>=0 ? 'text-profit' : 'text-loss' },
+                    { l:'Арилжаа',  v: String(popup.trades.length), c:'text-primary' },
+                    { l:'Win Rate', v: wr+'%', c: wr>=50?'text-profit':'text-loss' },
                   ].map(s => (
                     <div key={s.l} className="py-4 text-center">
                       <div className={`text-base font-bold font-mono ${s.c}`}>{s.v}</div>
@@ -147,10 +147,10 @@ export default function CalendarPage({ trades, onAdd, userSettings, onUpdateSett
                 )}>
                   <div className="flex justify-between items-start mb-2">
                     <div>
-                      <span className="font-bold text-sm text-zinc-100">{t.pair}</span>
+                      <span className="font-bold text-sm text-primary">{t.pair}</span>
                       {t.account && <span className="ml-2 text-[10px] text-muted bg-bg3 px-1.5 py-0.5 rounded">{t.account}</span>}
                     </div>
-                    <span className={clsx('font-mono font-bold text-sm', t.pnl>=0?'text-green':'text-red')}>
+                    <span className={clsx('font-mono font-bold text-sm', t.pnl>=0?'text-profit':'text-loss')}>
                       {pnlStr(t.pnl)}
                     </span>
                   </div>
@@ -180,10 +180,10 @@ export default function CalendarPage({ trades, onAdd, userSettings, onUpdateSett
             <div className="flex items-center justify-between px-5 py-4 border-b border-border">
               <div className="flex items-center gap-2">
                 <NotebookPen size={15} className="text-accent" />
-                <span className="font-semibold text-zinc-100 text-sm">{weekReview.label}</span>
+                <span className="font-semibold text-primary text-sm">{weekReview.label}</span>
               </div>
               <button onClick={() => setWeekReview(null)}
-                className="w-7 h-7 rounded-full bg-bg3 flex items-center justify-center text-muted hover:text-zinc-200 transition-colors">
+                className="w-7 h-7 rounded-full bg-bg3 flex items-center justify-center text-muted hover:text-primary transition-colors">
                 <X size={13} />
               </button>
             </div>
@@ -194,15 +194,15 @@ export default function CalendarPage({ trades, onAdd, userSettings, onUpdateSett
                 onChange={e => setWeekDraft(e.target.value.slice(0, 696))}
                 placeholder="Write your weekly review — what went well, what to improve..."
                 rows={6}
-                className="w-full bg-bg3 border border-border rounded-xl px-4 py-3 text-sm text-zinc-200 placeholder-zinc-600 resize-none focus:outline-none focus:border-accent/50 transition-colors"
+                className="w-full bg-bg3 border border-border rounded-xl px-4 py-3 text-sm text-primary placeholder-zinc-600 resize-none focus:outline-none focus:border-accent/50 transition-colors"
               />
               <div className="flex items-center justify-between mt-2">
-                <span className={clsx('text-[11px]', weekDraft.length >= 696 ? 'text-red' : 'text-zinc-600')}>
+                <span className={clsx('text-[11px]', weekDraft.length >= 696 ? 'text-loss' : 'text-muted')}>
                   {weekDraft.length} / 696
                 </span>
                 <div className="flex gap-2">
                   <button onClick={() => setWeekReview(null)}
-                    className="px-4 py-2 text-sm text-muted hover:text-zinc-200 transition-colors">
+                    className="px-4 py-2 text-sm text-muted hover:text-primary transition-colors">
                     Cancel
                   </button>
                   <button onClick={saveWeekReview}
@@ -220,8 +220,8 @@ export default function CalendarPage({ trades, onAdd, userSettings, onUpdateSett
 
         {/* ── Header: Monthly P/L + stats ── */}
         <div className="text-center">
-          <span className="text-xl font-bold font-mono text-white">Monthly P/L: </span>
-          <span className={`text-xl font-bold font-mono ${mPL >= 0 ? 'text-green' : 'text-red'}`}>
+          <span className="text-xl font-bold font-mono text-primary">Monthly P/L: </span>
+          <span className={`text-xl font-bold font-mono ${mPL >= 0 ? 'text-profit' : 'text-loss'}`}>
             {fmtPnl(mPL)}
           </span>
         </div>
@@ -230,7 +230,7 @@ export default function CalendarPage({ trades, onAdd, userSettings, onUpdateSett
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-1">
             <button onClick={() => nav(-1)} className="btn-icon w-8 h-8"><ChevronLeft size={14}/></button>
-            <span className="text-sm font-semibold text-zinc-100 px-3 py-1.5 rounded-lg bg-bg2 border border-border min-w-[130px] text-center">
+            <span className="text-sm font-semibold text-primary px-3 py-1.5 rounded-lg bg-bg2 border border-border min-w-[130px] text-center">
               {MONTHS[mo]} {yr}
             </span>
             <button onClick={() => nav(1)} className="btn-icon w-8 h-8"><ChevronRight size={14}/></button>
@@ -240,12 +240,12 @@ export default function CalendarPage({ trades, onAdd, userSettings, onUpdateSett
             {accounts.length > 0 && (
               <div className="flex items-center gap-1 bg-bg2 border border-border rounded-xl p-1">
                 <button onClick={() => setSelectedAccount('All')}
-                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${selectedAccount==='All' ? 'bg-bg3 text-zinc-100' : 'text-muted hover:text-zinc-300'}`}>
+                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${selectedAccount==='All' ? 'bg-bg3 text-primary' : 'text-muted hover:text-secondary'}`}>
                   Бүгд
                 </button>
                 {accounts.map(a => (
                   <button key={a.name} onClick={() => setSelectedAccount(a.name)}
-                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${selectedAccount===a.name ? 'bg-accent/15 text-accent' : 'text-muted hover:text-zinc-300'}`}>
+                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${selectedAccount===a.name ? 'bg-accent/15 text-accent' : 'text-muted hover:text-secondary'}`}>
                     {a.name}
                   </button>
                 ))}
@@ -263,7 +263,7 @@ export default function CalendarPage({ trades, onAdd, userSettings, onUpdateSett
               <div key={d} className={clsx(
                 'text-center text-[11px] font-semibold tracking-wide py-3',
                 i < 6 && 'border-r border-border',
-                i === 6 ? 'text-zinc-500' : 'text-muted'
+                i === 6 ? 'text-muted' : 'text-muted'
               )}>{d}</div>
             ))}
           </div>
@@ -297,21 +297,21 @@ export default function CalendarPage({ trades, onAdd, userSettings, onUpdateSett
                           'border-border bg-bg3/20 hover:bg-bg3/40 transition-colors',
                           !isLast && 'border-b',
                         )}>
-                        <span className="text-[12px] font-medium text-zinc-500 tracking-wide">Week{wi + 1}</span>
+                        <span className="text-[12px] font-medium text-muted tracking-wide">Week{wi + 1}</span>
                         <span className={clsx(
                           'text-[26px] font-bold font-mono leading-none',
-                          weekPL > 0 ? 'text-green' : weekPL < 0 ? 'text-red' : 'text-zinc-500'
+                          weekPL > 0 ? 'text-profit' : weekPL < 0 ? 'text-loss' : 'text-muted'
                         )}>
                           {weekCount > 0 ? fmtPnl(weekPL) : '—'}
                         </span>
                         {weekCount > 0 && (
-                          <span className="text-[12px] text-zinc-600">{weekCount} trades</span>
+                          <span className="text-[12px] text-muted">{weekCount} trades</span>
                         )}
                         <div className={clsx(
                           'flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-medium transition-all',
                           hasNote
                             ? 'bg-accent/15 text-accent'
-                            : 'bg-bg3 text-zinc-500 group-hover:text-zinc-300 group-hover:bg-bg3/80'
+                            : 'bg-bg3 text-muted group-hover:text-secondary group-hover:bg-bg3/80'
                         )}>
                           <NotebookPen size={10} />
                           {hasNote ? 'Note' : '+ Note'}
@@ -338,7 +338,7 @@ export default function CalendarPage({ trades, onAdd, userSettings, onUpdateSett
                       <div className={clsx(
                         'text-xs font-semibold w-[22px] h-[22px] flex items-center justify-center rounded-full self-start leading-none',
                         isT  ? 'bg-accent text-black font-bold' :
-                        c.cur ? 'text-zinc-500' : 'text-zinc-700'
+                        c.cur ? 'text-muted' : 'text-muted'
                       )}>{c.day}</div>
 
                       {/* PNL */}
@@ -346,11 +346,11 @@ export default function CalendarPage({ trades, onAdd, userSettings, onUpdateSett
                         <div className="flex-1 flex flex-col items-center justify-center gap-0.5 mt-1">
                           <span className={clsx(
                             'text-[22px] font-bold font-mono leading-none',
-                            pl > 0 ? 'text-green' : pl < 0 ? 'text-red' : 'text-yellow'
+                            pl > 0 ? 'text-profit' : pl < 0 ? 'text-loss' : 'text-yellow'
                           )}>
                             {fmtPnl(pl)}
                           </span>
-                          <span className="text-[11px] text-zinc-500">{dt.length} trades</span>
+                          <span className="text-[11px] text-muted">{dt.length} trades</span>
                         </div>
                       )}
                     </div>
@@ -365,7 +365,7 @@ export default function CalendarPage({ trades, onAdd, userSettings, onUpdateSett
         <div className="bg-bg2 border border-border rounded-2xl p-5 space-y-3">
           <div className="flex items-center gap-2">
             <NotebookPen size={14} className="text-accent" />
-            <span className="text-sm font-semibold text-zinc-200">Monthly Review</span>
+            <span className="text-sm font-semibold text-primary">Monthly Review</span>
             <span className="text-xs text-muted">— {MONTHS[mo]} {yr}</span>
           </div>
           <textarea
@@ -373,9 +373,9 @@ export default function CalendarPage({ trades, onAdd, userSettings, onUpdateSett
             onChange={e => saveMonthReview(e.target.value.slice(0, 1693))}
             placeholder="What were your strengths this month? What needs improvement? Key lessons..."
             rows={4}
-            className="w-full bg-bg3 border border-border rounded-xl px-4 py-3 text-sm text-zinc-200 placeholder-zinc-600 resize-none focus:outline-none focus:border-accent/50 transition-colors"
+            className="w-full bg-bg3 border border-border rounded-xl px-4 py-3 text-sm text-primary placeholder-zinc-600 resize-none focus:outline-none focus:border-accent/50 transition-colors"
           />
-          <div className={clsx('text-[11px] text-right mt-1', monthReview.length >= 1693 ? 'text-red' : 'text-zinc-600')}>
+          <div className={clsx('text-[11px] text-right mt-1', monthReview.length >= 1693 ? 'text-loss' : 'text-muted')}>
             {monthReview.length} / 1693
           </div>
         </div>

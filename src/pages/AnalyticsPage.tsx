@@ -76,7 +76,7 @@ export default function AnalyticsPage({ trades }: Props) {
 
   if (!trades.length) return (
     <div className="fade-in">
-      <h1 className="text-xl font-bold text-zinc-100 tracking-tight mb-2">Analytics</h1>
+      <h1 className="text-xl font-bold text-primary tracking-tight mb-2">Analytics</h1>
       <div className="card p-16 text-center text-muted">
         <div className="text-4xl mb-3">📊</div>
         <div className="text-sm">Add trades to see analytics</div>
@@ -90,7 +90,7 @@ export default function AnalyticsPage({ trades }: Props) {
   return (
     <div className="fade-in space-y-4">
       <div>
-        <h1 className="text-xl font-bold text-zinc-100 tracking-tight">Analytics</h1>
+        <h1 className="text-xl font-bold text-primary tracking-tight">Analytics</h1>
         <p className="text-sm text-muted mt-0.5">Performance deep dive</p>
       </div>
 
@@ -113,7 +113,7 @@ export default function AnalyticsPage({ trades }: Props) {
       {/* Monthly P&L bar chart */}
       {monthly.length > 0 && (
         <div className="card p-5">
-          <div className="font-semibold text-sm text-zinc-200 mb-4">Monthly P&L</div>
+          <div className="font-semibold text-sm text-primary mb-4">Monthly P&L</div>
           <ResponsiveContainer width="100%" height={130}>
             <BarChart data={monthly} barSize={28}>
               <XAxis dataKey="m" tick={{ fill:'#52525b', fontSize:10 }} axisLine={false} tickLine={false}/>
@@ -131,14 +131,14 @@ export default function AnalyticsPage({ trades }: Props) {
       <div className="grid grid-cols-2 gap-4">
         {/* By Pair */}
         <div className="card p-5">
-          <div className="font-semibold text-sm text-zinc-200 mb-3">Performance by Pair</div>
+          <div className="font-semibold text-sm text-primary mb-3">Performance by Pair</div>
           <div className="space-y-3">
             {pairs.slice(0, 8).map(p => (
               <div key={p.pair}>
                 <div className="flex items-center justify-between text-xs mb-1">
-                  <span className="font-semibold text-zinc-300 w-16">{p.pair}</span>
+                  <span className="font-semibold text-secondary w-16">{p.pair}</span>
                   <span className="text-muted">{p.total} trades</span>
-                  <span className={clsx('font-mono font-semibold', p.pl>=0?'text-green':'text-red')}>
+                  <span className={clsx('font-mono font-semibold', p.pl>=0?'text-profit':'text-loss')}>
                     {p.pl>=0?'+':''}${p.pl.toFixed(0)}
                   </span>
                   <span className="text-muted w-10 text-right">{p.wr}%</span>
@@ -156,16 +156,16 @@ export default function AnalyticsPage({ trades }: Props) {
 
         {/* By Emotion */}
         <div className="card p-5">
-          <div className="font-semibold text-sm text-zinc-200 mb-3">Psychology · Win Rate</div>
+          <div className="font-semibold text-sm text-primary mb-3">Psychology · Win Rate</div>
           <div className="space-y-2">
             {emotions.map(e => (
               <div key={e.e} className="flex items-center gap-3 bg-bg3 border border-border rounded-lg px-3 py-2">
                 <span className="text-base">{e.e.split(' ')[0]}</span>
                 <div className="flex-1 min-w-0">
-                  <div className="text-xs font-medium text-zinc-300 truncate">{e.e.split(' ').slice(1).join(' ')}</div>
+                  <div className="text-xs font-medium text-secondary truncate">{e.e.split(' ').slice(1).join(' ')}</div>
                   <div className="text-[10px] text-muted">{e.total} trades · {e.pl>=0?'+':''}${e.pl.toFixed(0)}</div>
                 </div>
-                <div className={clsx('font-mono text-sm font-bold', e.wr>=50?'text-green':'text-red')}>{e.wr}%</div>
+                <div className={clsx('font-mono text-sm font-bold', e.wr>=50?'text-profit':'text-loss')}>{e.wr}%</div>
               </div>
             ))}
           </div>

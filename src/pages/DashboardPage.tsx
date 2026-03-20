@@ -11,7 +11,7 @@ interface Props { trades: Trade[]; userSettings?: UserSettings | null; onAdd?: (
 const ChartTooltip = ({ active, payload, label }: any) => active && payload?.length ? (
   <div className="bg-bg2 border border-border2 rounded-lg px-3 py-2 text-xs shadow-xl">
     <div className="text-muted mb-0.5">{label}</div>
-    <div className="font-mono font-medium text-zinc-200">${Number(payload[0].value).toFixed(2)}</div>
+    <div className="font-mono font-medium text-primary">${Number(payload[0].value).toFixed(2)}</div>
   </div>
 ) : null
 
@@ -97,7 +97,7 @@ export default function DashboardPage({ trades, userSettings, onAdd }: Props) {
       {/* ── Header ── */}
       <div className="flex items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-zinc-100 tracking-tight">Dashboard</h1>
+          <h1 className="text-2xl font-bold text-primary tracking-tight">Dashboard</h1>
           <p className="text-sm text-muted mt-0.5">{today}</p>
         </div>
         <div className="flex items-center gap-3">
@@ -106,7 +106,7 @@ export default function DashboardPage({ trades, userSettings, onAdd }: Props) {
               <button
                 onClick={() => setSelectedAccount('All')}
                 className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
-                  selectedAccount === 'All' ? 'bg-bg3 text-zinc-100 border border-border2' : 'text-muted hover:text-zinc-300'
+                  selectedAccount === 'All' ? 'bg-bg3 text-primary border border-border2' : 'text-muted hover:text-secondary'
                 }`}
               >
                 Бүгд
@@ -118,7 +118,7 @@ export default function DashboardPage({ trades, userSettings, onAdd }: Props) {
                   className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
                     selectedAccount === a.name
                       ? 'bg-accent/15 text-accent border border-accent/30'
-                      : 'text-muted hover:text-zinc-300'
+                      : 'text-muted hover:text-secondary'
                   }`}
                 >
                   {a.name}
@@ -190,7 +190,7 @@ export default function DashboardPage({ trades, userSettings, onAdd }: Props) {
       <div className="grid grid-cols-2 gap-4">
         <div className="card p-5">
           <div className="flex items-center justify-between mb-4">
-            <div className="font-semibold text-sm text-zinc-200">Equity Curve</div>
+            <div className="font-semibold text-sm text-primary">Equity Curve</div>
             <span className="text-xs font-mono px-2.5 py-1 rounded-lg" style={{ background: isUp ? 'rgba(34,197,94,0.12)' : 'rgba(239,68,68,0.12)', color: isUp ? '#22c55e' : '#ef4444' }}>
               {fmtPnl(st.pl)}
             </span>
@@ -213,7 +213,7 @@ export default function DashboardPage({ trades, userSettings, onAdd }: Props) {
 
         <div className="card p-5">
           <div className="flex items-center justify-between mb-4">
-            <div className="font-semibold text-sm text-zinc-200">Drawdown</div>
+            <div className="font-semibold text-sm text-primary">Drawdown</div>
             <span className="text-xs font-mono px-2.5 py-1 rounded-lg" style={{ background: 'rgba(239,68,68,0.12)', color: '#ef4444' }}>
               Max −${maxDD.toFixed(2)}
             </span>
@@ -243,7 +243,7 @@ export default function DashboardPage({ trades, userSettings, onAdd }: Props) {
       {/* ── Distribution + Session ── */}
       <div className="grid grid-cols-2 gap-4">
         <div className="card p-5">
-          <div className="font-semibold text-sm text-zinc-200 mb-5">Distribution</div>
+          <div className="font-semibold text-sm text-primary mb-5">Distribution</div>
           <div className="flex items-center gap-6">
             <Donut wins={st.wins} losses={st.losses} be={st.be} />
             <div className="space-y-4 flex-1">
@@ -265,7 +265,7 @@ export default function DashboardPage({ trades, userSettings, onAdd }: Props) {
         </div>
 
         <div className="card p-5">
-          <div className="font-semibold text-sm text-zinc-200 mb-5">Session Breakdown</div>
+          <div className="font-semibold text-sm text-primary mb-5">Session Breakdown</div>
           <div className="space-y-4">
             {sessions.map(s => {
               const maxAbs = Math.max(...sessions.map(x => Math.abs(x.pl)), 1)

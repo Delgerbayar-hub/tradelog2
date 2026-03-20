@@ -29,7 +29,7 @@ export default function AccountModal({ open, editing, onClose, onSave, onDelete 
     <div className="fixed inset-0 bg-black/70 z-[500] flex items-center justify-center backdrop-blur-sm" onClick={onClose}>
       <div className="card w-[380px] p-6 fade-in" onClick={e => e.stopPropagation()}>
         <div className="flex justify-between items-center mb-5">
-          <h2 className="font-semibold text-zinc-100">{editing ? 'Edit Account' : 'New Account'}</h2>
+          <h2 className="font-semibold text-primary">{editing ? 'Edit Account' : 'New Account'}</h2>
           <button onClick={onClose} className="btn-icon"><X size={14}/></button>
         </div>
         <div className="space-y-4">
