@@ -78,6 +78,7 @@ export interface Book {
   currentPage?: number;
   pageLogs?: PageLog[];
   coverBase64?: string;
+  description?: string;
 }
 
 export interface UserSettings {

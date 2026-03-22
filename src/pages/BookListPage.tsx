@@ -93,9 +93,9 @@ function BookDetail({ book, onBack, onChange }: {
           <div className="relative group/cover shrink-0 cursor-pointer" onClick={() => coverRef.current?.click()}>
             <input ref={coverRef} type="file" accept="image/*" className="hidden" onChange={handleCoverChange} />
             {book.coverBase64 ? (
-              <img src={book.coverBase64} className="w-24 object-cover rounded-lg border border-border2" style={{ height: 132 }} />
+              <img src={book.coverBase64} className="object-cover rounded-lg border border-border2" style={{ width: 104, height: 142 }} />
             ) : (
-              <div className="w-24 flex flex-col items-center justify-center rounded-lg border border-dashed border-border2 text-muted" style={{ height: 132 }}>
+              <div className="flex flex-col items-center justify-center rounded-lg border border-dashed border-border2 text-muted" style={{ width: 104, height: 142 }}>
                 <ImagePlus size={16} />
               </div>
             )}
