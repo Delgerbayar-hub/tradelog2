@@ -1,5 +1,35 @@
 // src/pages/DashboardPage.tsx
 import { useMemo, useState } from 'react'
+
+const QUOTES = [
+  { quote: "The game of speculation is the most uniformly fascinating game in the world. But it is not a game for the stupid, the mentally lazy, the person of inferior emotional balance, or the get-rich-quick adventurer.", author: "Jesse Livermore" },
+  { quote: "It never was my thinking that made the big money for me. It always was my sitting.", author: "Jesse Livermore" },
+  { quote: "The stock market is a device for transferring money from the impatient to the patient.", author: "Warren Buffett" },
+  { quote: "Risk comes from not knowing what you are doing.", author: "Warren Buffett" },
+  { quote: "The most important thing to me is that we don't lose money.", author: "Paul Tudor Jones" },
+  { quote: "Don't focus on making money; focus on protecting what you have.", author: "Paul Tudor Jones" },
+  { quote: "It's not whether you're right or wrong, but how much money you make when you're right and how much you lose when you're wrong.", author: "George Soros" },
+  { quote: "Markets are constantly in a state of uncertainty and flux, and money is made by discounting the obvious and betting on the unexpected.", author: "George Soros" },
+  { quote: "The trend is your friend until the end when it bends.", author: "Ed Seykota" },
+  { quote: "Win or lose, everybody gets what they want out of the market.", author: "Ed Seykota" },
+  { quote: "The key to trading success is emotional discipline. If intelligence were the key, there would be a lot more people making money trading.", author: "Victor Sperandeo" },
+  { quote: "Trading is a probability game. You don't need to be right all the time. You just need to have a positive expectancy.", author: "Mark Douglas" },
+  { quote: "Successful trading is about finding the trades that feel right and sticking with them.", author: "Mark Douglas" },
+  { quote: "Amateurs want to be right. Professionals want to make money.", author: "Unknown" },
+  { quote: "A peak performance trader is totally committed to being the best and doing whatever it takes to be the best.", author: "Van K. Tharp" },
+  { quote: "The elements of good trading are cutting losses, cutting losses, and cutting losses.", author: "Ed Seykota" },
+  { quote: "I just wait until there is money lying in the corner, and all I have to do is go over there and pick it up.", author: "Jim Rogers" },
+  { quote: "The goal of a successful trader is to make the best trades. Money is secondary.", author: "Alexander Elder" },
+  { quote: "In trading, the impossible happens about twice a year.", author: "Henri M. Simoes" },
+  { quote: "Trade what you see, not what you think.", author: "Unknown" },
+  { quote: "Patterns repeat, because human nature hasn't changed for thousands of years.", author: "Jesse Livermore" },
+  { quote: "Every trader has strengths and weaknesses. Some are good holders of winners, but may hold their losers a little too long.", author: "Steve Clark" },
+  { quote: "The market is a device for transferring money from the active to the patient.", author: "Charlie Munger" },
+  { quote: "In this business, if you're good, you're right six times out of ten. You're never going to be right nine times out of ten.", author: "Peter Lynch" },
+  { quote: "Opportunities come infrequently. When it rains gold, put out the bucket, not the thimble.", author: "Warren Buffett" },
+]
+
+const dailyQuote = QUOTES[Math.floor(Date.now() / 86400000) % QUOTES.length]
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts'
 import { Activity, Target, TrendingUp, TrendingDown, Zap, Flame, Trophy, AlertTriangle } from 'lucide-react'
 import type { Trade, UserSettings } from '../types'
@@ -92,7 +122,14 @@ export default function DashboardPage({ trades, userSettings, onAdd }: Props) {
   const today = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })
 
   return (
-    <div className="p-6 space-y-5 fade-in">
+    <div className="fade-in">
+      {/* Daily quote banner */}
+      <div className="py-3 px-6 bg-transparent border-b border-border text-center">
+        <span className="italic text-base text-secondary">"{dailyQuote.quote}"</span>
+        <span className="text-muted text-base"> — {dailyQuote.author}</span>
+      </div>
+
+    <div className="p-6 space-y-5">
 
       {/* ── Header ── */}
       <div className="flex items-center justify-between gap-4">
@@ -289,6 +326,7 @@ export default function DashboardPage({ trades, userSettings, onAdd }: Props) {
           </div>
         </div>
       </div>
+    </div>
     </div>
   )
 }

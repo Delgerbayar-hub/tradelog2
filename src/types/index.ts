@@ -60,6 +60,26 @@ export interface TradingAccount {
   status?: AccountStatus;
 }
 
+export type BookStatus = 'unread' | 'reading' | 'done';
+
+export interface PageLog {
+  date: string;
+  page: number;
+}
+
+export interface Book {
+  id: number;
+  title: string;
+  author: string;
+  category: string;
+  status: BookStatus;
+  rating?: number;
+  totalPages?: number;
+  currentPage?: number;
+  pageLogs?: PageLog[];
+  coverBase64?: string;
+}
+
 export interface UserSettings {
   userId: string;
   pairs: string[];
@@ -69,6 +89,7 @@ export interface UserSettings {
   avatarBase64?: string;
   bio?: string;
   analyticsIncludeInactive?: boolean;
-  monthlyReviews?: Record<string, string>; // "2026-03" → review text
-  weeklyReviews?: Record<string, string>;  // "2026-03-W2" → review text
+  monthlyReviews?: Record<string, string>;
+  weeklyReviews?: Record<string, string>;
+  books?: Book[];
 }

@@ -2,20 +2,22 @@
 import { useState } from 'react';
 import { useAuth } from './context/AuthContext';
 import { useFirestore } from './hooks/useFirestore';
-import { LayoutDashboard, List, Calendar, LogOut, ChevronLeft, ChevronRight } from 'lucide-react';
+import { LayoutDashboard, List, Calendar, BookOpen, LogOut, ChevronLeft, ChevronRight } from 'lucide-react';
 
 import TradesPage from './pages/TradesPage';
 import DashboardPage from './pages/DashboardPage';
 import CalendarPage from './pages/CalendarPage';
 import ProfilePage from './pages/ProfilePage';
+import BookListPage from './pages/BookListPage';
 import LoginPage from './pages/LoginPage';
 
-type Page = 'dashboard' | 'trades' | 'calendar' | 'profile';
+type Page = 'dashboard' | 'trades' | 'calendar' | 'books' | 'profile';
 
 const NAV_ITEMS = [
   { id: 'dashboard' as Page, label: 'Dashboard', Icon: LayoutDashboard },
   { id: 'trades'    as Page, label: 'Trades',    Icon: List },
   { id: 'calendar'  as Page, label: 'Calendar',  Icon: Calendar },
+  { id: 'books'     as Page, label: 'Books',     Icon: BookOpen },
 ];
 
 export default function App() {
@@ -131,6 +133,11 @@ export default function App() {
           />
         ) : page === 'calendar' ? (
           <CalendarPage trades={trades} onAdd={() => { setPage('trades'); setOpenModal(true); }} userSettings={userSettings} onUpdateSettings={updateUserSettings} />
+        ) : page === 'books' ? (
+          <BookListPage
+            books={userSettings?.books ?? []}
+            onBooksChange={b => updateUserSettings({ books: b })}
+          />
         ) : (
           <ProfilePage
             user={user}
