@@ -39,6 +39,7 @@ function BookDetail({ book, onBack, onChange }: {
   onChange: (b: Book) => void;
 }) {
   const [pageInput, setPageInput] = useState('');
+  const [pageError, setPageError] = useState('');
   const [totalInput, setTotalInput] = useState(book.totalPages?.toString() ?? '');
   const coverRef = useRef<HTMLInputElement>(null);
 
@@ -56,12 +57,15 @@ function BookDetail({ book, onBack, onChange }: {
   const pct     = total > 0 ? Math.min(100, Math.round((current / total) * 100)) : 0;
 
   const logPage = () => {
-    const p = parseInt(pageInput);
-    if (!p || p < 1 || p > total) return;
-    const entry: PageLog = { date: today(), page: p };
+    const added = parseInt(pageInput);
+    if (!added || added < 1) { setPageError('1-ээс их тоо оруулна уу'); return; }
+    const newPage = Math.min(current + added, total);
+    if (added > total - current) { setPageError(`Хамгийн ихдээ ${total - current} хуудас үлдсэн`); return; }
+    setPageError('');
+    const entry: PageLog = { date: today(), page: newPage };
     const logs = [...(book.pageLogs ?? []), entry].sort((a, b) => a.date.localeCompare(b.date));
-    const newStatus: Status = p >= total ? 'done' : 'reading';
-    onChange({ ...book, currentPage: p, pageLogs: logs, status: newStatus });
+    const newStatus: Status = newPage >= total ? 'done' : 'reading';
+    onChange({ ...book, currentPage: newPage, pageLogs: logs, status: newStatus });
     setPageInput('');
   };
 
@@ -149,15 +153,16 @@ function BookDetail({ book, onBack, onChange }: {
             <input
               className="input"
               type="number"
-              placeholder={`Өнөөдрийн хуудас (1–${total})`}
+              placeholder={`Өнөөдөр уншсан хуудас (+${total - current} үлдсэн)`}
               value={pageInput}
               min={1}
               max={total}
-              onChange={e => setPageInput(e.target.value)}
+              onChange={e => { setPageInput(e.target.value); setPageError(''); }}
               onKeyDown={e => e.key === 'Enter' && logPage()}
             />
             <button onClick={logPage} className="btn-primary px-4 shrink-0">Бүртгэх</button>
           </div>
+          {pageError && <p className="text-loss text-xs">{pageError}</p>}
           <div className="flex items-center gap-2">
             <div className="flex-1 h-1.5 bg-bg rounded-full overflow-hidden">
               <div className={`h-full rounded-full transition-all duration-500 ${pct >= 100 ? 'bg-profit' : 'bg-accent'}`}
@@ -176,7 +181,7 @@ function BookDetail({ book, onBack, onChange }: {
             {[...(book.pageLogs ?? [])].reverse().map((log, i) => (
               <div key={i} className="flex items-center justify-between text-sm">
                 <span className="text-muted font-mono text-xs">{log.date}</span>
-                <span className="text-primary font-medium">{log.page}-р хуудас</span>
+                <span className="text-primary font-medium">{log.page}-н хуудас</span>
               </div>
             ))}
           </div>
