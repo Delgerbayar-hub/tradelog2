@@ -157,6 +157,8 @@ export default function ProfilePage({ user, userSettings, trades, onUpdateSettin
 
   const [editing, setEditing] = useState(false);
   const [saving,  setSaving]  = useState(false);
+  const [editGoalName, setEditGoalName] = useState<string | null>(null);
+  const [editGoalVal,  setEditGoalVal]  = useState('');
 
   const [editName,   setEditName]   = useState('');
   const [editBio,    setEditBio]    = useState('');
@@ -192,6 +194,18 @@ export default function ProfilePage({ user, userSettings, trades, onUpdateSettin
       setEditing(false);
     } catch (err) { console.error(err); }
     setSaving(false);
+  };
+
+  const saveGoal = (accName: string) => {
+    const val = parseFloat(editGoalVal);
+    if (isNaN(val) || val <= 0) return;
+    const updated = accounts.map(a =>
+      a.name === accName
+        ? { ...a, goal: val, goalEditCount: (a.goalEditCount ?? 0) + 1 }
+        : a
+    );
+    onUpdateSettings({ accounts: updated });
+    setEditGoalName(null);
   };
 
   const totalTrades = trades.length;
@@ -502,9 +516,36 @@ export default function ProfilePage({ user, userSettings, trades, onUpdateSettin
                     </div>
                     <div className="bg-bg3 rounded-xl p-3.5">
                       <p className="text-[10px] text-muted uppercase tracking-widest mb-2 flex items-center gap-1"><Target size={9} /> Goal</p>
-                      <p className="text-2xl font-bold font-mono leading-none text-yellow-400">
-                        {fmtBalance(acc.goal)}
-                      </p>
+                      {(() => {
+                        const editCount = acc.goalEditCount ?? 0;
+                        const canEdit = editCount < 2;
+                        if (editGoalName === acc.name) return (
+                          <div className="flex items-center gap-1.5">
+                            <input
+                              autoFocus type="number" value={editGoalVal}
+                              onChange={e => setEditGoalVal(e.target.value)}
+                              onKeyDown={e => { if (e.key === 'Enter') saveGoal(acc.name); if (e.key === 'Escape') setEditGoalName(null); }}
+                              className="input py-1 text-sm font-mono w-24"
+                            />
+                            <button onClick={() => saveGoal(acc.name)} className="text-accent text-xs font-medium hover:underline">OK</button>
+                            <button onClick={() => setEditGoalName(null)} className="text-muted text-xs hover:text-primary">✕</button>
+                          </div>
+                        );
+                        return (
+                          <div className="flex items-center gap-2">
+                            <p
+                              className={`text-2xl font-bold font-mono leading-none text-yellow-400 ${canEdit ? 'cursor-pointer hover:opacity-70 transition-opacity' : 'cursor-not-allowed'}`}
+                              onClick={() => canEdit && (setEditGoalName(acc.name), setEditGoalVal(String(acc.goal)))}
+                              title={canEdit ? `Засах (${2 - editCount} удаа үлдсэн)` : 'Засах боломжгүй'}
+                            >
+                              {fmtBalance(acc.goal)}
+                            </p>
+                            {canEdit && (
+                              <span className="text-[10px] text-muted">{2 - editCount}x</span>
+                            )}
+                          </div>
+                        );
+                      })()}
                       <p className="text-[11px] text-muted mt-1.5 flex items-center gap-1">
                         <ChevronRight size={9} /> зорилго
                       </p>

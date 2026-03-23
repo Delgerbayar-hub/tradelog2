@@ -58,6 +58,7 @@ export interface TradingAccount {
   goal: number;      // target balance
   active?: boolean;  // legacy — use status instead
   status?: AccountStatus;
+  goalEditCount?: number; // max 2 edits allowed
 }
 
 export type BookStatus = 'unread' | 'reading' | 'done';
